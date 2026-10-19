@@ -43,18 +43,7 @@ const SERVICES: Service[] = [
     description: "Reels, TikToks, and Shorts cut for retention without losing the brand’s point of view.",
     accent: "orchid",
   },
-  {
-    number: "05",
-    title: "YouTube\nEditing",
-    description: "Long-form storytelling with pacing, visual polish, and reasons to keep watching.",
-    accent: "iris",
-  },
-  {
-    number: "06",
-    title: "Motion\nGraphics",
-    description: "Typography, product moments, transitions, and animation that clarify the idea.",
-    accent: "plum",
-  },
+
 ];
 
 export type ServicesSectionProps = {

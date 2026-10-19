@@ -3,18 +3,21 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { Sora, Bebas_Neue } from "next/font/google";
+import { Manrope, Space_Grotesk } from "next/font/google";
 
-const sora = Sora({
+/* Same font configs as the Hero, so Next.js reuses the same font files. */
+const display = Space_Grotesk({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-sora",
+  weight: ["700"],
+  variable: "--font-display",
+  display: "swap",
 });
 
-const bebasNeue = Bebas_Neue({
+const body = Manrope({
   subsets: ["latin"],
-  weight: "400",
-  variable: "--font-display",
+  weight: ["500", "700"],
+  variable: "--font-body",
+  display: "swap",
 });
 
 const companies = Array.from({ length: 38 }, (_, index) => ({
@@ -24,7 +27,7 @@ const companies = Array.from({ length: 38 }, (_, index) => ({
 
 const LOGO_WIDTH = 220;
 const LOGO_HEIGHT = 110;
-const LOGO_GAP = 48;
+const LOGO_GAP = 40; // must match gap-[40px] on the track (was 48)
 
 export default function LogoSlider() {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -34,9 +37,8 @@ export default function LogoSlider() {
     const measureTrack = () => {
       if (!trackRef.current) return;
 
-      const firstSetWidth =
-        companies.length * LOGO_WIDTH +
-        (companies.length - 1) * LOGO_GAP;
+      // One full set including the gap after it = seamless loop
+      const firstSetWidth = companies.length * (LOGO_WIDTH + LOGO_GAP);
 
       setLoopDistance(firstSetWidth);
     };
@@ -52,7 +54,7 @@ export default function LogoSlider() {
 
   return (
     <section
-      className={`${sora.className} relative w-full overflow-hidden rounded-3xl bg-[#06040D] py-10 sm:py-12 md:py-14`}
+      className={`${body.className} relative w-full overflow-hidden rounded-3xl bg-[#08070B] py-10 sm:py-12 md:py-14`}
     >
       {/* =========================================================
           HEADER
@@ -73,10 +75,10 @@ export default function LogoSlider() {
               mb-4
               inline-block
               text-[11px]
-              font-extrabold
+              font-bold
               uppercase
-              tracking-[0.28em]
-              text-[#A78BFA]
+              tracking-[0.24em]
+              text-[#B9A0FF]
               sm:text-xs
               md:text-sm
             "
@@ -86,29 +88,20 @@ export default function LogoSlider() {
 
           <h2
             className={`
-              ${bebasNeue.className}
-              text-[3.7rem]
-              leading-[0.82]
-              tracking-[0.025em]
-              text-white
-              sm:text-[4.8rem]
-              md:text-[6rem]
-              lg:text-[7rem]
+              ${display.className}
+              pb-[0.08em]
+              text-[2.75rem]
+              font-bold
+              uppercase
+              leading-[1.04]
+              tracking-[-0.03em]
+              text-[#F7F5FA]
+              sm:text-[3.75rem]
+              md:text-[4.75rem]
+              lg:text-[5.5rem]
             `}
           >
-            MY{" "}
-            <span
-              className="
-                bg-gradient-to-r
-                from-[#A78BFA]
-                via-[#F0ABFC]
-                to-[#8B5CF6]
-                bg-clip-text
-                text-transparent
-              "
-            >
-              CLIENTS
-            </span>
+            MY <span className="text-[#9164F5]">CLIENTS</span>
           </h2>
 
           <p
@@ -116,10 +109,10 @@ export default function LogoSlider() {
               mx-auto
               mt-5
               max-w-xl
-              text-sm
-              font-semibold
+              text-[15px]
+              font-medium
               leading-7
-              text-zinc-400
+              text-[#AAA5B5]
               sm:text-base
               md:text-lg
             "
@@ -135,7 +128,7 @@ export default function LogoSlider() {
       ========================================================= */}
 
       <div className="relative w-full overflow-hidden">
-        {/* LEFT 15% DARK AREA */}
+        {/* LEFT: 10% fully blank, then a short soft fade (15% wide in total) */}
         <div
           aria-hidden="true"
           className="
@@ -148,11 +141,11 @@ export default function LogoSlider() {
           "
           style={{
             background:
-              "linear-gradient(90deg, #06040D 0%, #06040D 42%, rgba(6,4,13,0.92) 62%, rgba(6,4,13,0.45) 82%, transparent 100%)",
+              "linear-gradient(90deg, #08070B 0%, #08070B 66%, rgba(8,7,11,0.6) 85%, transparent 100%)",
           }}
         />
 
-        {/* RIGHT 15% DARK AREA */}
+        {/* RIGHT: 10% fully blank, then a short soft fade (15% wide in total) */}
         <div
           aria-hidden="true"
           className="
@@ -165,7 +158,7 @@ export default function LogoSlider() {
           "
           style={{
             background:
-              "linear-gradient(270deg, #06040D 0%, #06040D 42%, rgba(6,4,13,0.92) 62%, rgba(6,4,13,0.45) 82%, transparent 100%)",
+              "linear-gradient(270deg, #08070B 0%, #08070B 66%, rgba(8,7,11,0.6) 85%, transparent 100%)",
           }}
         />
 
@@ -179,10 +172,10 @@ export default function LogoSlider() {
             flex
             w-max
             items-center
-            gap-[48px]
+            gap-[40px]
             py-2
-            sm:gap-[48px]
-            md:gap-[48px]
+            sm:gap-[40px]
+            md:gap-[40px]
           "
           animate={{
             x: loopDistance ? [-loopDistance, 0] : 0,
