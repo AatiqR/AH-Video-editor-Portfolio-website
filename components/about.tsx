@@ -3,7 +3,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import type { Variants } from "framer-motion";
 
-const PROFILE_IMAGE = "/Assets/Akash.png";
+const PROFILE_IMAGE = "/Assets/Aakash.png";
 
 const EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
@@ -217,7 +217,7 @@ export default function AboutUs() {
               id="about-heading"
               className="text-[2.75rem] font-semibold leading-[0.95] tracking-[-0.035em] text-white sm:text-7xl lg:text-[5.5rem]"
             >
-              Akash
+              Aakash
               <br />
               <span className="bg-gradient-to-b from-white via-zinc-200 to-zinc-500 bg-clip-text text-transparent">
                 Hanif
@@ -233,7 +233,7 @@ export default function AboutUs() {
 
               <span className="hidden h-px w-8 bg-zinc-700 sm:block" />
 
-              <span className="text-zinc-500">Aakash Edits Lab</span>
+              <span className="text-zinc-500">Aakash Creative Studio</span>
             </p>
 
             <p className="mt-8 max-w-xl text-lg leading-relaxed text-zinc-300 sm:text-xl">
@@ -322,7 +322,7 @@ export default function AboutUs() {
                   <div className="relative aspect-[4/5] w-full">
                     <img
                       src={PROFILE_IMAGE}
-                      alt="Portrait of Akash Hanif, video editor and creative strategist"
+                      alt="Portrait of Aakash Hanif, video editor and creative strategist"
                       className="absolute inset-0 h-full w-full object-cover object-top"
                       loading="lazy"
                     />
@@ -347,11 +347,11 @@ export default function AboutUs() {
                   <div className="absolute inset-x-3 bottom-3 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 backdrop-blur-md sm:inset-x-4 sm:bottom-4">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-medium text-white">
-                        Akash Hanif
+                        Aakash Hanif
                       </p>
 
                       <p className="truncate text-xs text-zinc-400">
-                        Aakash Edits Lab
+                        Aakash Creative Studio
                       </p>
                     </div>
 
@@ -375,7 +375,7 @@ export default function AboutUs() {
             <div className="max-w-2xl space-y-5 text-base leading-[1.8] text-zinc-400 sm:text-[17px]">
               <p>
                 <span className="text-zinc-100">
-                  I'm Akash Hanif, a performance-focused video editor and
+                  I'm Aakash Hanif, a performance-focused video editor and
                   creative strategist.
                 </span>{" "}
                 Over the past 2+ years and 1000+ projects, I've worked with
@@ -636,7 +636,7 @@ export default function AboutUs() {
           </blockquote>
 
           <figcaption className="relative mt-6 text-sm text-zinc-500">
-            Akash Hanif, Aakash Edits Lab
+            Aakash Hanif, Aakash Creative Studio
           </figcaption>
         </motion.figure>
 

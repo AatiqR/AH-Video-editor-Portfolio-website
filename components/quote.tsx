@@ -45,7 +45,7 @@ type SupportOffer = {
   cta: string;
 };
 
-const BOOKING_URL = "https://cal.com/aakash-creative-studio/30min";
+const BOOKING_URL = "https://cal.com/Aakash-creative-studio/30min";
 
 const mainPlans: Plan[] = [
   {

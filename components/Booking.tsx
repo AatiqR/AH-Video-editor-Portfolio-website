@@ -42,7 +42,7 @@ const body = Manrope({
 /* Cal.com                                                             */
 /* ------------------------------------------------------------------ */
 
-const CAL_LINK = "aakash-creative-studio/30min";
+const CAL_LINK = "Aakash-creative-studio/30min";
 const CAL_NAMESPACE = "30min";
 const CAL_ORIGIN = "https://app.cal.com";
 const CAL_PAGE_URL = `https://cal.com/${CAL_LINK}`;

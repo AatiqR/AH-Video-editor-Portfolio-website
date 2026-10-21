@@ -1,607 +1,428 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Image from "next/image"
-import { motion, useReducedMotion, type Variants } from "framer-motion"
+import { useId, useState, type CSSProperties } from "react";
+import Image from "next/image";
+import { MotionConfig, motion, type MotionProps } from "framer-motion";
+import { Manrope, Space_Grotesk } from "next/font/google";
 
-interface Testimonial {
-  name: string
-  position: string
-  quote: string
-  initial: string
-  image?: string // Optional image URL
-}
+const display = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["700"],
+  variable: "--font-display",
+  display: "swap",
+});
+const body = Manrope({
+  subsets: ["latin"],
+  weight: ["500", "700"],
+  variable: "--font-body",
+  display: "swap",
+});
+
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+const BORDER = "border-[rgba(145,100,245,0.18)]";
+
+/* Client photos: /public/Assets/Clients/client1.webp ... client30.webp (one per review, in order) */
+const AVATAR_BASE = "/Assets/Clients";
+
+const reveal = (delay = 0, y = 18): MotionProps => ({
+  initial: { opacity: 0, y },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-60px" },
+  transition: { duration: 0.7, ease: EASE, delay },
+});
 
 /* ------------------------------------------------------------------ */
-/* Design tokens — swap these for your Hero's exact values if they differ */
+/* Marquee CSS: static string, uniquely prefixed, no global selectors. */
+/* Two identical copies + translate by -50% = perfectly seamless loop. */
 /* ------------------------------------------------------------------ */
-const EASE = [0.16, 1, 0.3, 1] as const
-
-const styles = `
-  .ts-section {
-    --ts-violet: #8b5cf6;
-    --ts-purple: #a855f7;
-    --ts-fuchsia: #d946ef;
-    --ts-lavender: #c4b5fd;
-  }
-
-  /* ---------- Marquee ---------- */
-  .ts-row { overflow: hidden; padding: 14px 0; }
-  .ts-fade {
-    -webkit-mask-image: linear-gradient(to right, transparent, #000 9%, #000 91%, transparent);
-            mask-image: linear-gradient(to right, transparent, #000 9%, #000 91%, transparent);
-  }
-  .ts-track {
-    display: flex;
-    width: max-content;
-    animation-duration: var(--ts-dur, 70s);
+const MARQUEE_CSS = `
+  .aelr-track {
+    animation-duration: var(--aelr-dur, 60s);
     animation-timing-function: linear;
     animation-iteration-count: infinite;
+    animation-play-state: running;
     will-change: transform;
     backface-visibility: hidden;
   }
-  .ts-track[data-dir="ltr"] { animation-name: ts-ltr; }
-  .ts-track[data-dir="rtl"] { animation-name: ts-rtl; }
+  .aelr-down { animation-name: aelr-down; }
+  .aelr-up { animation-name: aelr-up; }
 
-  /* Each group = cards + trailing gap, so two groups are exactly 2x one group
-     and translating by 50% lands on an identical frame (no snap). */
-  .ts-group {
-    display: flex;
-    flex-shrink: 0;
-    gap: var(--ts-gap, 20px);
-    padding-right: var(--ts-gap, 20px);
+  @keyframes aelr-down {
+    from { transform: translate3d(0, -50%, 0); }
+    to { transform: translate3d(0, 0, 0); }
   }
-
-  @keyframes ts-ltr { from { transform: translate3d(-50%, 0, 0); } to { transform: translate3d(0, 0, 0); } }
-  @keyframes ts-rtl { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
-
-
-  /* ---------- Card ---------- */
-  .ts-card {
-    position: relative;
-    isolation: isolate;
-    overflow: hidden;
-    border: 1px solid transparent;
-    border-radius: 22px;
-    background:
-      linear-gradient(#0b0b0e, #08080a) padding-box,
-      linear-gradient(135deg, rgba(139, 92, 246, 0.4), rgba(255, 255, 255, 0.06) 45%, rgba(168, 85, 247, 0.28)) border-box;
-    box-shadow:
-      0 20px 44px -22px rgba(124, 58, 237, 0.5),
-      0 2px 0 0 rgba(255, 255, 255, 0.04) inset;
-    transform: perspective(900px) translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg);
-    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  .ts-card::before { /* soft light reflection, revealed on hover */
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    background:
-      radial-gradient(120% 80% at 0% 0%, rgba(196, 181, 253, 0.16), transparent 55%),
-      linear-gradient(115deg, transparent 35%, rgba(217, 70, 239, 0.10) 50%, transparent 65%);
-    opacity: 0;
-    transition: opacity 0.5s ease;
-  }
-  .ts-card::after { /* thin top highlight for glass depth */
-    content: "";
-    position: absolute;
-    left: 14%; right: 14%; top: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(221, 214, 254, 0.55), transparent);
-  }
-  @media (hover: hover) {
-    .ts-card:hover {
-      transform: perspective(900px) translate3d(0, -6px, 0) rotateX(2deg) rotateY(-1.5deg);
-      box-shadow:
-        0 28px 50px -20px rgba(139, 92, 246, 0.55),
-        0 2px 0 0 rgba(255, 255, 255, 0.06) inset;
-    }
-    .ts-card:hover::before { opacity: 1; }
-    .ts-card:hover .ts-avatar { box-shadow: 0 0 0 1px rgba(196, 181, 253, 0.9), 0 0 18px rgba(168, 85, 247, 0.55); }
-  }
-  .ts-avatar {
-    box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.55);
-    transition: box-shadow 0.4s ease;
+  @keyframes aelr-up {
+    from { transform: translate3d(0, 0, 0); }
+    to { transform: translate3d(0, -50%, 0); }
   }
 
-  /* Reduced motion: keep it moving, just calmer (half speed, no card transitions) */
   @media (prefers-reduced-motion: reduce) {
-    .ts-track { animation-duration: calc(var(--ts-dur, 70s) * 2) !important; }
-    .ts-card { transition: none; }
+    .aelr-track { animation-duration: calc(var(--aelr-dur, 60s) * 2.5); }
   }
-`
+`;
+
+/* Soft top/bottom fade in the page color (alpha mask, no colored glow) */
+const FADE_MASK =
+  "[-webkit-mask-image:linear-gradient(to_bottom,transparent_0%,#000_14%,#000_86%,transparent_100%)] [mask-image:linear-gradient(to_bottom,transparent_0%,#000_14%,#000_86%,transparent_100%)]";
 
 /* ------------------------------------------------------------------ */
-/* Data — names, roles and image paths preserved. Copy refocused on    */
-/* the video-editing work, using qualitative language only.            */
+/* Data. Review text is preserved exactly as provided.                 */
 /* ------------------------------------------------------------------ */
-const rowOneTestimonials: Testimonial[] = [
-  {
-    name: "Daniel Brooks",
-    position: "Real Estate Consultant",
-    quote:
-      "My listing videos finally hold attention. The opening seconds are sharp and the pacing carries people through the whole walkthrough.",
-    initial: "D",
-    image: "/Assets/Reviews/user1.jpeg",
-  },
-  {
-    name: "Sarah Mitchell",
-    position: "Online Business Coach",
-    quote:
-      "Every cut has a reason. My short-form videos feel intentional now, and viewers stay with them instead of swiping away.",
-    initial: "S",
-    image: "/Assets/Reviews/user2.png",
-  },
-  {
-    name: "Anthony Rivera",
-    position: "Agency Owner",
-    quote:
-      "I handed over our client edits and stopped worrying about them. Clean cuts, tidy captions, and the brand look stays consistent.",
-    initial: "A",
-    image: "/Assets/Reviews/user3.jpeg",
-  },
-  {
-    name: "Melissa Grant",
-    position: "Personal Brand Strategist",
-    quote:
-      "The captions and sound design make my clips feel finished. It's the look I wanted for my social content and couldn't describe.",
-    initial: "M",
-    image: "/Assets/Reviews/user4.jpeg",
-  },
-  {
-    name: "Kevin Thompson",
-    position: "Fitness Program Founder",
-    quote:
-      "Fast, punchy and easy to follow. The edits keep the energy of my workouts without dragging anywhere.",
-    initial: "K",
-    image: "/Assets/Reviews/user5.jpeg",
-  },
-  {
-    name: "Nina Patel",
-    position: "Marketing Manager",
-    quote:
-      "Our Meta ad creatives came back with stronger hooks and a clear message. The team noticed the difference right away.",
-    initial: "N",
-    image: "/Assets/Reviews/user6.jpeg",
-  },
-  {
-    name: "Omar Khalid",
-    position: "E-commerce Brand Owner",
-    quote:
-      "The product ads look sharp and stay true to our brand. Motion graphics are tasteful, never overdone.",
-    initial: "O",
-    image: "/Assets/Reviews/user7.jpeg",
-  },
-  {
-    name: "Laura Simmons",
-    position: "Content Manager",
-    quote:
-      "Quality stays steady from one project to the next. That reliability makes planning our content calendar so much easier.",
-    initial: "L",
-    image: "/Assets/Reviews/user8.jpeg",
-  },
-  {
-    name: "Jason Miller",
-    position: "Startup Founder",
-    quote:
-      "Our product video explains the idea in seconds. The story is tight, the visuals are clear, and nothing feels padded.",
-    initial: "J",
-    image: "/Assets/Reviews/user9.png",
-  },
-  {
-    name: "Emily Rogers",
-    position: "Coaching Business Owner",
-    quote:
-      "My videos now look like my brand. The style is simple, consistent, and easy for my audience to recognise.",
-    initial: "E",
-    image: "/Assets/Reviews/user10.jpeg",
-  },
-]
-
-const rowTwoTestimonials: Testimonial[] = [
-  {
-    name: "Hassan Malik",
-    position: "Social Media Consultant",
-    quote:
-      "Built for social from the first frame. The pacing and hooks suit each platform, and my clients have noticed.",
-    initial: "H",
-    image: "/Assets/Reviews2/u1.jpeg",
-  },
-  {
-    name: "Rebecca Collins",
-    position: "Online Course Creator",
-    quote:
-      "The VSL flows like a real conversation. It leads viewers toward the offer without feeling pushy.",
-    initial: "R",
-    image: "/Assets/Reviews2/u2.jpeg",
-  },
-  {
-    name: "Thomas Nguyen",
-    position: "Brand Manager",
-    quote:
-      "Good instincts on rhythm and structure. Our message lands clearly, even in a thirty-second cut.",
-    initial: "T",
-    image: "/Assets/Reviews2/u3.png",
-  },
-  {
-    name: "Ayesha Rahman",
-    position: "Lifestyle Brand Founder",
-    quote:
-      "The AI UGC ads looked natural and matched my brand's tone. I didn't have to explain the vibe twice.",
-    initial: "A",
-    image: "/Assets/Reviews2/u4.jpeg",
-  },
-  {
-    name: "Mark Evans",
-    position: "Digital Product Seller",
-    quote:
-      "Every video is shaped around getting the viewer to act. He thinks about the goal, not just the timeline.",
-    initial: "M",
-    image: "/Assets/Reviews2/u5.jpeg",
-  },
-  {
-    name: "Daniel Foster",
-    position: "Entrepreneur, Creative Works",
-    quote:
-      "The Pixar-style video was a fun surprise. It got people talking and it still carried our message.",
-    initial: "D",
-    image: "/Assets/Reviews2/u6.png",
-  },
-  {
-    name: "Sophie Taylor",
-    position: "Coach, Mindset Academy",
-    quote:
-      "Timing is spot on. Music, captions and cuts all land together, and the feedback on my content has been lovely.",
-    initial: "S",
-    image: "/Assets/Reviews2/u7.jpeg",
-  },
-  {
-    name: "Lucas Morgan",
-    position: "Marketing Specialist",
-    quote:
-      "He delivered several ad variations that stayed on brand. That made testing creative much simpler for us.",
-    initial: "L",
-    image: "/Assets/Reviews2/u8.jpeg",
-  },
-  {
-    name: "Isabella King",
-    position: "Content Creator",
-    quote:
-      "I love how polished everything feels. The edit gives my personality room to come through.",
-    initial: "I",
-    image: "/Assets/Reviews2/u9.jpeg",
-  },
-  {
-    name: "Ryan Carter",
-    position: "Business Coach",
-    quote:
-      "My social videos look cleaner and more confident. Potential clients comment on how well they're put together.",
-    initial: "R",
-    image: "/Assets/Reviews2/u10.png",
-  },
-]
-
-const rowThreeTestimonials: Testimonial[] = [
-  {
-    name: "Chloe Bennett",
-    position: "Entrepreneur, Style Hive",
-    quote:
-      "The visuals stop the scroll without shouting. Colours, motion and type all feel like they belong together.",
-    initial: "C",
-    image: "/Assets/Reviews3/u1.jpeg",
-  },
-  {
-    name: "James Walker",
-    position: "Founder, Tech Solutions",
-    quote:
-      "Our tutorials gained clarity and pace. The motion graphics point viewers to what matters.",
-    initial: "J",
-    image: "/Assets/Reviews3/u2.png",
-  },
-  {
-    name: "Sophia Martinez",
-    position: "CEO, Digital Wave",
-    quote:
-      "The claymation ad was charming and memorable. It gave our brand a personality we hadn't shown before.",
-    initial: "S",
-    image: "/Assets/Reviews3/u3.jpeg",
-  },
-  {
-    name: "Liam Anderson",
-    position: "Freelancer",
-    quote:
-      "Consistent quality, and you can tell each video was handled with care. It's made my channel feel more established.",
-    initial: "L",
-    image: "/Assets/Reviews3/u4.jpeg",
-  },
-  {
-    name: "Emma Johansson",
-    position: "Founder, Creative Minds",
-    quote:
-      "Across every platform my videos now share one look. It's made the whole brand feel more cohesive.",
-    initial: "E",
-    image: "/Assets/Reviews3/u5.jpeg",
-  },
-]
-
-// Desktop rows (direction + speed + spacing vary slightly for depth)
-const ROWS = [
-  { items: rowOneTestimonials, dir: "ltr", duration: 75, gap: 20, id: "row1" },
-  { items: rowTwoTestimonials, dir: "rtl", duration: 90, gap: 24, id: "row2" },
-  { items: rowThreeTestimonials, dir: "ltr", duration: 80, gap: 20, id: "row3" },
-] as const
-
-// Mobile: one mixed marquee so every testimonial is represented
-const mobileTestimonials: Testimonial[] = (() => {
-  const lists = [rowOneTestimonials, rowTwoTestimonials, rowThreeTestimonials]
-  const max = Math.max(...lists.map((l) => l.length))
-  const out: Testimonial[] = []
-  for (let i = 0; i < max; i++) lists.forEach((l) => l[i] && out.push(l[i]))
-  return out
-})()
-
-/* ------------------------------------------------------------------ */
-/* Entrance choreography                                               */
-/* ------------------------------------------------------------------ */
-const stagger: Variants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.11, delayChildren: 0.05 } },
-}
-const rise: Variants = {
-  hidden: { opacity: 0, y: 18 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: EASE } },
-}
-const glowIn: Variants = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { duration: 1.2, ease: EASE } },
-}
-const word: Variants = {
-  hidden: { opacity: 0, y: 22, filter: "blur(10px)" },
-  show: { opacity: 1, y: 0, filter: "blur(0px)", transition: { duration: 0.8, ease: EASE } },
-}
-const headingWrap: Variants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.07 } },
+interface RawReview {
+  title: string;
+  rating: number;
+  quote: string;
 }
 
-const HEADING_WHITE = ["What", "people", "are"]
-const HEADING_GRADIENT = ["saying", "about", "my", "work."]
+interface Review extends RawReview {
+  id: string;
+  name: string;
+  avatar: string;
+}
+
+/* PLACEHOLDER first names: replace with the real reviewers' names when you have them. */
+const NAMES: readonly string[] = [
+  "Ethan", "Sophia", "Liam", "Olivia", "Noah",
+  "Emma", "Lucas", "Ava", "Mason", "Mia",
+  "Logan", "Amelia", "Jacob", "Harper", "Elijah",
+  "Layla", "Daniel", "Zara", "Henry", "Nora",
+  "Owen", "Chloe", "Caleb", "Isla", "Ryan",
+  "Leah", "Adrian", "Maya", "Nathan", "Ruby",
+];
+
+/* Add more entries (up to 30 or beyond) and everything adapts automatically. */
+const RAW_REVIEWS: readonly RawReview[] = [
+  {
+    title: "Facebook Ads Setup and Management",
+    rating: 5.0,
+    quote:
+      "Great communication, clear plan of action, already seeing results. 5 Stars!",
+  },
+  {
+    title: "Short Form AI Video Creator - Must Speak English",
+    rating: 5.0,
+    quote: "Great freelancer! Don't hesitate to hire.",
+  },
+  {
+    title: "Video Editor Needed for Ecom Ads & VSLs",
+    rating: 5.0,
+    quote: "Thanks for your great work",
+  },
+  {
+    title: "Video Editor for Meta Ads, E-commerce Product Video",
+    rating: 5.0,
+    quote: "Great work, Completed the job well. Would hire again!!!",
+  },
+  {
+    title: "AI Content Creator/Editor",
+    rating: 4.5,
+    quote:
+      "This was our paid test project, and overall, Aakash delivered. What was missing, and why we are closing this contract, is the lack of creativity compared to the price. For that price per video, we would expect a significantly higher level of creativity.",
+  },
+  {
+    title: "I need a 20-30 second marketing video (AI generated)",
+    rating: 5.0,
+    quote:
+      "Aakash is a truly gifted AI video generator who does not stop until you are 100% happy with the result. His commitment to his work is incredibly inspiring to see, only matched by his video generation skills! Will definitely be using his services for any future video generation tasks that we have. Thanks a milion Aakash!!!",
+  },
+  {
+    title: "swellgone.com | create AI product videos",
+    rating: 5.0,
+    quote: "Great work, Completed the job well.",
+  },
+  {
+    title: "Animation Video for Commercial Handwash Technology",
+    rating: 5.0,
+    quote: "Great freelancer! Great communication, doing a great job.",
+  },
+  {
+    title: "project 4 - video editing- four visions UGC scripts (no ai)",
+    rating: 5.0,
+    quote: "Aakash did a great job.",
+  },
+  {
+    title: "Direct Response Video Editor (UGC / AI / Viral Ads)",
+    rating: 5.0,
+    quote: "Right person for a DTC brands and Aakash doing a great job.",
+  },
+  {
+    title:
+      "AI & Video Editor – Meta Ad Creatives – Higgsfield, AI Tools & Traditional Editing",
+    rating: 5.0,
+    quote:
+      "Top rated customer service, very professional, attention to detail, positive feedback, on-time delivery.",
+  },
+  {
+    title: "AI Commercial",
+    rating: 5.0,
+    quote: "Aakash is great to work with. Communicative and good quality output",
+  },
+  {
+    title: "Ai Video Editor for Meta Ads",
+    rating: 5.0,
+    quote: "Amazing work.",
+  },
+  {
+    title: "AI UGC Workflow Operator Needed",
+    rating: 5.0,
+    quote:
+      "Aakash was amazing to work with. I plan on working with him again. He is detail oriented, responsive and sticks to his commitments all while providing excellent service.",
+  },
+  {
+    title: "DTC Ad Creative Video Editor - with expertise in AI remixing",
+    rating: 4.0,
+    quote:
+      "The videos produced were good. I would have liked for a bit more of a quality check before presenting to me to catch AI errors misplaced name on product item. Overall, his video output was good.",
+  },
+];
+
+const REVIEWS: readonly Review[] = RAW_REVIEWS.map((r, i) => ({
+  ...r,
+  id: String(i + 1),
+  name: NAMES[i] ?? `Client ${i + 1}`,
+  avatar: `${AVATAR_BASE}/client${i + 1}.webp`,
+}));
+
+/* Derived from the data above, never hard-coded */
+const AVERAGE = (
+  REVIEWS.reduce((sum, r) => sum + r.rating, 0) / REVIEWS.length
+).toFixed(2);
+const FIVE_STAR = REVIEWS.filter((r) => r.rating === 5).length;
+
+const DIRECTIONS = ["down", "up", "down"] as const;
+const OFFSET_FRACTIONS = [0.1, 0.45, 0.75] as const;
+
+const distribute = (items: readonly Review[], columns: number): Review[][] => {
+  const out: Review[][] = Array.from({ length: columns }, () => []);
+  items.forEach((item, i) => {
+    out[i % columns]?.push(item);
+  });
+  return out;
+};
+
+/* Deterministic height estimate (SSR-safe) used to pick loop length and speed */
+const estimateHeight = (items: readonly Review[]): number =>
+  items.reduce((sum, r) => sum + 230 + Math.ceil(r.quote.length / 40) * 28 + 24, 0);
+
+const SPEED_PX_PER_SECOND = 30;
 
 /* ------------------------------------------------------------------ */
-/* Component                                                           */
+/* Pieces                                                              */
 /* ------------------------------------------------------------------ */
-export default function TestimonialSection() {
-  const reduce = useReducedMotion()
-  const v = (variants: Variants): Variants | undefined => (reduce ? undefined : variants)
+const STAR_PATH =
+  "M12 2.5l2.9 6.1 6.6.8-4.9 4.6 1.3 6.6L12 17.3 6.1 20.6l1.3-6.6L2.5 9.4l6.6-.8L12 2.5z";
+
+function Stars({ rating }: { rating: number }) {
+  return (
+    <span aria-hidden="true" className="flex items-center gap-0.5">
+      {[0, 1, 2, 3, 4].map((i) => {
+        const fill = Math.min(1, Math.max(0, rating - i));
+        return (
+          <span key={i} className="relative inline-block h-3.5 w-3.5 shrink-0">
+            <svg viewBox="0 0 24 24" className="absolute inset-0 h-3.5 w-3.5 fill-[#2A2433]">
+              <path d={STAR_PATH} />
+            </svg>
+            <span
+              className="absolute inset-y-0 left-0 overflow-hidden"
+              style={{ width: `${fill * 100}%` }}
+            >
+              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 max-w-none fill-[#B9A0FF]">
+                <path d={STAR_PATH} />
+              </svg>
+            </span>
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+function Avatar({ src, name, eager }: { src: string; name: string; eager: boolean }) {
+  const [failed, setFailed] = useState(false);
 
   return (
-    <>
-      <style jsx global>
-        {styles}
-      </style>
-
-      <motion.section
-        id="Reviews"
-        aria-labelledby="testimonials-heading"
-        className="ts-section relative isolate my-24 overflow-hidden bg-[#050308] py-16 text-white md:py-24"
-        variants={v(stagger)}
-        initial={reduce ? undefined : "hidden"}
-        whileInView={reduce ? undefined : "show"}
-        viewport={{ once: true, amount: 0.15 }}
-      >
-        {/* Ambient lighting (static gradients — no animated blur) */}
-        <motion.div
-          aria-hidden="true"
-          variants={v(glowIn)}
-          className="pointer-events-none absolute inset-0 -z-10"
-        >
-          <div className="absolute left-1/2 top-[-10%] h-[520px] w-[920px] max-w-full -translate-x-1/2 bg-[radial-gradient(closest-side,rgba(139,92,246,0.28),transparent)]" />
-          <div className="absolute left-[8%] top-[55%] h-[380px] w-[520px] max-w-full bg-[radial-gradient(closest-side,rgba(217,70,239,0.12),transparent)]" />
-          <div className="absolute bottom-[-8%] right-[6%] h-[360px] w-[560px] max-w-full bg-[radial-gradient(closest-side,rgba(124,58,237,0.16),transparent)]" />
-          <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#050308] to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-[#050308] to-transparent" />
-        </motion.div>
-
-        {/* Introduction */}
-        <div className="mx-auto mb-10 max-w-3xl px-5 text-center md:mb-14">
-          <motion.p
-            variants={v(rise)}
-            className="mb-4 inline-flex items-center gap-2 rounded-full border border-violet-400/25 bg-violet-500/10 px-4 py-1.5 text-[11px] font-medium uppercase tracking-[0.22em] text-violet-200"
-          >
-            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-fuchsia-400 shadow-[0_0_10px_rgba(232,121,249,0.9)]" />
-            Client experiences
-          </motion.p>
-
-          <motion.h2
-            id="testimonials-heading"
-            variants={v(headingWrap)}
-            aria-label="What people are saying about my work."
-            className="text-balance text-[2rem] font-bold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl"
-          >
-            <span aria-hidden="true">
-              {HEADING_WHITE.map((w) => (
-                <motion.span key={w} variants={v(word)} className="mr-[0.26em] inline-block">
-                  {w}
-                </motion.span>
-              ))}
-              {HEADING_GRADIENT.map((w, i) => (
-                <motion.span
-                  key={`${w}-${i}`}
-                  variants={v(word)}
-                  className="mr-[0.26em] inline-block bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400 bg-clip-text pb-[0.08em] text-transparent [filter:drop-shadow(0_0_22px_rgba(168,85,247,0.35))]"
-                >
-                  {w}
-                </motion.span>
-              ))}
-            </span>
-          </motion.h2>
-
-          {/* Decorative accent line */}
-          <motion.div
-            aria-hidden="true"
-            variants={v({
-              hidden: { opacity: 0, scaleX: 0 },
-              show: { opacity: 1, scaleX: 1, transition: { duration: 0.9, ease: EASE } },
-            })}
-            className="mx-auto mt-6 h-px w-40 bg-gradient-to-r from-transparent via-fuchsia-400 to-transparent shadow-[0_0_14px_rgba(217,70,239,0.6)]"
-          />
-
-          <motion.p
-            variants={v(rise)}
-            className="mx-auto mt-6 max-w-xl text-pretty text-sm leading-relaxed text-violet-100/65 sm:text-base"
-          >
-            Thoughtfully crafted video edits, scroll-stopping creatives, and visuals designed to help brands
-            communicate with clarity and confidence.
-          </motion.p>
-        </div>
-
-        {/* Desktop / tablet: three rows */}
-        <div className="hidden md:block" role="region" aria-label="Client testimonials">
-          {ROWS.map((row, i) => (
-            <motion.div
-              key={row.id}
-              variants={v({
-                hidden: { opacity: 0, y: 26 },
-                show: { opacity: 1, y: 0, transition: { duration: 0.85, ease: EASE, delay: 0.15 + i * 0.12 } },
-              })}
-              className={i === 1 ? "md:translate-x-0" : undefined}
-            >
-              <MarqueeRow items={row.items} dir={row.dir} duration={row.duration} gap={row.gap} />
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Mobile: one left-to-right row */}
-        <motion.div
-          variants={v(rise)}
-          className="md:hidden"
-          role="region"
-          aria-label="Client testimonials"
-        >
-          <MarqueeRow items={mobileTestimonials} dir="ltr" duration={150} gap={14} compact />
-        </motion.div>
-      </motion.section>
-    </>
-  )
+    <span className="relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-full bg-[#1C1824] ring-1 ring-white/15 ring-offset-2 ring-offset-[#100D15]">
+      {failed ? (
+        <span className={`${display.className} text-xl text-[#F7F5FA]`}>
+          {name.charAt(0)}
+        </span>
+      ) : (
+        <Image
+          src={src}
+          alt=""
+          fill
+          sizes="64px"
+          quality={85}
+          loading={eager ? "eager" : "lazy"}
+          onError={() => setFailed(true)}
+          className="object-cover object-center"
+        />
+      )}
+    </span>
+  );
 }
 
-/* ------------------------------------------------------------------ */
-/* Seamless marquee row                                                */
-/* ------------------------------------------------------------------ */
-function MarqueeRow({
+function ReviewCard({ review, eager }: { review: Review; eager: boolean }) {
+  return (
+    <figure className="m-0 flex w-full shrink-0 flex-col rounded-3xl bg-[#100D15] p-7 transition-colors duration-300 motion-reduce:transition-none sm:p-8 [@media(hover:hover)]:hover:bg-[#15121B]">
+      <div className="flex items-center gap-2">
+        <Stars rating={review.rating} />
+        <span className={`${display.className} text-xs tracking-[-0.02em] text-[#AAA5B5]`}>
+          {review.rating.toFixed(1)}
+        </span>
+      </div>
+
+      <blockquote className="m-0 mt-4 text-[16px] font-medium leading-[1.7] text-[#F7F5FA] [overflow-wrap:anywhere] sm:text-[17px]">
+        {review.quote}
+      </blockquote>
+
+      <figcaption className="mt-7 flex items-center gap-4">
+        <Avatar src={review.avatar} name={review.name} eager={eager} />
+        <span className="min-w-0">
+          <span className={`${display.className} block text-[17px] leading-[1.2] tracking-[-0.02em] text-[#F7F5FA]`}>
+            {review.name}
+          </span>
+          <span className="mt-1 line-clamp-2 block text-[12px] font-medium leading-[1.45] text-[#AAA5B5] [overflow-wrap:anywhere]">
+            {review.title}
+          </span>
+        </span>
+      </figcaption>
+    </figure>
+  );
+}
+
+interface MarqueeColumnProps {
+  items: readonly Review[];
+  direction: "down" | "up";
+  offsetFraction: number; // 0..1 head start so columns never line up
+  className?: string;
+}
+
+function MarqueeColumn({
   items,
-  dir,
-  duration,
-  gap,
-  compact = false,
-}: {
-  items: Testimonial[]
-  dir: "ltr" | "rtl"
-  duration: number
-  gap: number
-  compact?: boolean
-}) {
-  // Make sure one group is wider than a large screen so the loop never shows a gap
-  const repeats = Math.max(1, Math.ceil(7 / items.length))
-  const group = Array.from({ length: repeats }, () => items).flat()
+  direction,
+  offsetFraction,
+  className = "",
+}: MarqueeColumnProps) {
+  /* Repeat items until one group is comfortably taller than the viewport */
+  const estimated = Math.max(1, estimateHeight(items));
+  const repeats = Math.max(1, Math.ceil(1100 / estimated));
+  const group = Array.from({ length: repeats }, () => items).flat();
+  const duration = Math.round((estimated * repeats) / SPEED_PX_PER_SECOND);
+
+  const trackStyle = {
+    "--aelr-dur": `${duration}s`,
+    animationDelay: `-${Math.round(duration * offsetFraction)}s`,
+  } as CSSProperties;
 
   return (
     <div
-      className="ts-row ts-fade"
-      style={{ touchAction: "pan-y" }}
+      className={`group relative h-[640px] overflow-hidden sm:h-[720px] lg:h-[800px] ${FADE_MASK} ${className}`}
     >
       <div
-        className="ts-track"
-        data-dir={dir}
-        style={{ ["--ts-dur" as string]: `${duration}s`, ["--ts-gap" as string]: `${gap}px` }}
+        aria-hidden="true"
+        className={`aelr-track ${
+          direction === "down" ? "aelr-down" : "aelr-up"
+        } flex flex-col [@media(hover:hover)]:group-hover:[animation-play-state:paused]`}
+        style={trackStyle}
       >
         {[0, 1].map((copy) => (
-          <div
-            key={copy}
-            className={`ts-group ${copy === 1 ? "ts-dup" : ""}`}
-            // Only the first copy is exposed to assistive tech
-            aria-hidden={copy === 1 ? true : undefined}
-          >
-            {group.map((t, idx) => {
-              // Repeats inside the first copy are also decorative duplicates
-              const isRepeat = copy === 1 || idx >= items.length
-              return (
-                <TestimonialCard
-                  key={`${copy}-${t.name}-${idx}`}
-                  testimonial={t}
-                  decorative={isRepeat}
-                  compact={compact}
-                  eager={copy === 0 && idx < 4}
-                />
-              )
-            })}
+          <div key={copy} className="flex flex-col gap-6 pb-6">
+            {group.map((r, idx) => (
+              <ReviewCard
+                key={`${copy}-${r.id}-${idx}`}
+                review={r}
+                eager={copy === 0 && idx < 6}
+              />
+            ))}
           </div>
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 /* ------------------------------------------------------------------ */
-/* Card                                                                */
+/* Section                                                             */
 /* ------------------------------------------------------------------ */
-function TestimonialCard({
-  testimonial,
-  decorative,
-  compact,
-  eager,
-}: {
-  testimonial: Testimonial
-  decorative: boolean
-  compact: boolean
-  eager: boolean
-}) {
-  const [failed, setFailed] = useState(false)
-  const showImage = testimonial.image && !failed
+export default function ClientReviews() {
+  const headingId = useId();
+  const columns = distribute(REVIEWS, 3);
 
   return (
-    <figure
-      className={`ts-card flex shrink-0 flex-col justify-between ${
-        compact ? "w-[280px] p-4" : "w-[320px] p-5 lg:w-[360px] lg:p-6"
-      }`}
-      aria-hidden={decorative ? true : undefined}
-    >
-      <span
-        aria-hidden="true"
-        className="mb-2 block bg-gradient-to-br from-violet-300 to-fuchsia-400 bg-clip-text font-serif text-4xl leading-none text-transparent"
+    <MotionConfig reducedMotion="user">
+      <section
+        id="results"
+        aria-labelledby={headingId}
+        className={`${display.variable} ${body.variable} ${body.className} relative isolate overflow-hidden bg-[#08070B] py-20 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] text-[#F7F5FA] antialiased sm:px-8 sm:py-28 lg:px-0`}
       >
-        &ldquo;
-      </span>
+        <style>{MARQUEE_CSS}</style>
 
-      <blockquote className="flex-1 text-[14px] leading-relaxed text-white/85 lg:text-[15px]">
-        {testimonial.quote}
-      </blockquote>
+        {/* Header */}
+        <div className="mx-auto max-w-3xl text-center">
+          <motion.p
+            {...reveal(0)}
+            className={`inline-flex items-center gap-2.5 rounded-full border ${BORDER} bg-[#15121B] px-4 py-1.5 text-[11px] font-bold uppercase leading-none tracking-[0.24em] text-[#B9A0FF] sm:text-xs`}
+          >
+            <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-[#9164F5]" />
+            Testimonials
+          </motion.p>
 
-      <figcaption className="mt-5 flex items-center gap-3 border-t border-violet-300/10 pt-4">
-        <div className="ts-avatar relative h-12 w-12 shrink-0 overflow-hidden rounded-full">
-          {showImage ? (
-            <Image
-              src={testimonial.image as string}
-              alt={decorative ? "" : `${testimonial.name}'s profile picture`}
-              fill
-              sizes="48px"
-              quality={80}
-              loading={eager ? "eager" : "lazy"}
-              onError={() => setFailed(true)}
-              className="object-cover object-center"
-            />
-          ) : (
-            <span className="flex h-full w-full items-center justify-center bg-gradient-to-br from-violet-600 to-fuchsia-600 text-sm font-semibold text-white">
-              {testimonial.initial}
-            </span>
-          )}
+          <motion.h2
+            {...reveal(0.08)}
+            id={headingId}
+            className={`${display.className} mt-6 text-[2rem] font-bold leading-[1.05] tracking-[-0.045em] [text-wrap:balance] min-[400px]:text-[2.4rem] sm:text-5xl lg:text-[3.75rem]`}
+          >
+            Hear from our <span className="text-[#9164F5]">Clients</span>
+          </motion.h2>
+
+          <motion.p
+            {...reveal(0.16)}
+            className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[13px] font-bold text-[#AAA5B5] sm:text-sm"
+          >
+            <span>{REVIEWS.length} projects reviewed</span>
+            <span aria-hidden="true" className="h-1 w-1 rounded-full bg-[#9164F5]" />
+            <span>{AVERAGE} / 5.0 average rating</span>
+            <span aria-hidden="true" className="h-1 w-1 rounded-full bg-[#9164F5]" />
+            <span>{FIVE_STAR} five-star reviews</span>
+          </motion.p>
         </div>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold tracking-tight text-white">{testimonial.name}</p>
-          <p className="truncate text-xs text-violet-200/55">{testimonial.position}</p>
-        </div>
-      </figcaption>
-    </figure>
-  )
+
+        {/* Screen-reader list: the animated copies are aria-hidden */}
+        <ul className="sr-only">
+          {REVIEWS.map((r) => (
+            <li key={r.id}>
+              {r.name}, {r.title}. Rating {r.rating.toFixed(1)} out of 5.0. {r.quote}
+            </li>
+          ))}
+        </ul>
+
+        {/* Marquee area: 90% wide on desktop, 5% blank on each side */}
+        <motion.div
+          {...reveal(0.2, 24)}
+          className="mx-auto mt-12 w-full max-w-xl sm:mt-16 lg:w-[90%] lg:max-w-[1800px]"
+        >
+          {/* Phones and tablets: one column, bottom to top */}
+          <MarqueeColumn
+            items={REVIEWS}
+            direction="up"
+            offsetFraction={0}
+            className="lg:hidden"
+          />
+
+          {/* Desktop: three columns, down / up / down */}
+          <div className="hidden gap-6 lg:grid lg:grid-cols-3 xl:gap-8">
+            {columns.map((items, i) => (
+              <MarqueeColumn
+                key={i}
+                items={items}
+                direction={DIRECTIONS[i] ?? "down"}
+                offsetFraction={OFFSET_FRACTIONS[i] ?? 0}
+              />
+            ))}
+          </div>
+        </motion.div>
+      </section>
+    </MotionConfig>
+  );
 }

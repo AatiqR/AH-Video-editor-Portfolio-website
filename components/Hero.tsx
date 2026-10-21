@@ -39,14 +39,14 @@ const body = Manrope({
    CONFIGURATION
    ============================================================ */
 
-const BOOKING_URL = "https://cal.com/aakash-creative-studio/30min";
+const BOOKING_URL = "https://cal.com/Aakash-creative-studio/30min";
 
 const WHATSAPP_URL =
   "https://wa.me/923335673693?text=Hi%20I%20am%20interested%20in%20your%20services";
 
 const VSL_ID = "RLxhKtkK7fc";
 
-const VSL_TITLE = "Aakash Edits Lab studio showreel";
+const VSL_TITLE = "Aakash Creative Studio studio showreel";
 
 const CUSTOM_POSTER: string | null = null;
 
@@ -575,7 +575,7 @@ function Navbar() {
 
             <a
               href="#top"
-              aria-label="Akash Hanif — Back to top"
+              aria-label="Aakash Hanif — Back to top"
               onClick={(event) => {
                 event.preventDefault();
                 scrollToTop();
@@ -630,7 +630,7 @@ function Navbar() {
                   md:text-[20px]
                 `}
               >
-                Akash Hanif
+                Aakash Hanif
               </span>
 
               <span
@@ -1102,7 +1102,7 @@ function VslPlayer() {
               <img
                 key={poster}
                 src={poster}
-                alt="Thumbnail for the Aakash Edits Lab studio showreel"
+                alt="Thumbnail for the Aakash Creative Studio studio showreel"
                 width={1280}
                 height={720}
                 loading="eager"

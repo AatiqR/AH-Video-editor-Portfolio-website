@@ -22,7 +22,7 @@ export default function Home() {
     <Service/>
     <Workflow/>
     <Feature/>
-    {/* <Testimoial/> */}
+    <Testimoial/>
     <About/>
     <Faqs/>
     <Quote/>

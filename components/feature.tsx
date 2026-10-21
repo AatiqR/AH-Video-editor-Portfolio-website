@@ -44,7 +44,7 @@ type Feature = {
   icon: LucideIcon;
 };
 
-const BOOKING_URL = "https://cal.com/aakash-creative-studio/30min";
+const BOOKING_URL = "https://cal.com/Aakash-creative-studio/30min";
 const WHATSAPP_URL =
   "https://wa.me/923335673693?text=Hi%20I%20am%20interested%20in%20your%20services";
 

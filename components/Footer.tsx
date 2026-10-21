@@ -34,15 +34,15 @@ const body = Manrope({
 });
 
 /* =========================================================
-   AKASH HANIF / AAKASH EDITS LAB — CONTACT
+   Aakash HANIF / Aakash Creative Studio — CONTACT
    ========================================================= */
 
 const whatsappUrl =
-  "https://wa.me/923335673693?text=Hi%20Akash%2C%20I%27d%20like%20to%20discuss%20a%20video%20project.";
+  "https://wa.me/923335673693?text=Hi%20Aakash%2C%20I%27d%20like%20to%20discuss%20a%20video%20project.";
 
-const bookingUrl = "https://cal.com/aakash-creative-studio/30min";
+const bookingUrl = "https://cal.com/Aakash-creative-studio/30min";
 
-const email = "aakashhanif.gsc@gmail.com";
+const email = "Aakashhanif.gsc@gmail.com";
 
 const phone = "+92 333 5673693";
 
@@ -82,7 +82,7 @@ type ContactEntry = {
 const contacts: ReadonlyArray<ContactEntry> = [
   {
     label: "WhatsApp",
-    value: "Message Akash",
+    value: "Message Aakash",
     href: whatsappUrl,
     external: true,
     icon: MessageCircle,
@@ -155,20 +155,20 @@ const socials: ReadonlyArray<{
 }> = [
   {
     label: "Instagram",
-    handle: "@aakasheditslab",
-    href: "https://instagram.com/aakasheditslab",
+    handle: "@Aakasheditslab",
+    href: "https://instagram.com/Aakasheditslab",
     icon: InstagramIcon,
   },
   {
     label: "LinkedIn",
-    handle: "Akash Hanif",
-    href: "https://www.linkedin.com/in/aakash-hanif-7a7a53289/",
+    handle: "Aakash Hanif",
+    href: "https://www.linkedin.com/in/Aakash-hanif-7a7a53289/",
     icon: LinkedinIcon,
   },
   {
     label: "X / Twitter",
-    handle: "@aakashhanif_",
-    href: "https://x.com/aakashhanif_",
+    handle: "@Aakashhanif_",
+    href: "https://x.com/Aakashhanif_",
     icon: XIcon,
   },
 ];
@@ -344,7 +344,7 @@ export default function Footer() {
               className="mt-6 flex items-center gap-3 text-[12px] font-bold uppercase leading-none tracking-[0.26em] text-[#B9A0FF]"
             >
               <span aria-hidden="true" className="h-px w-8 bg-[#B9A0FF]" />
-              Aakash Edits Lab
+              Aakash Creative Studio
               <span aria-hidden="true" className="h-px w-8 bg-[#B9A0FF]" />
             </motion.p>
 
@@ -490,10 +490,10 @@ export default function Footer() {
                   <h3
                     className={`${display.className} mt-1.5 text-[1.5rem] font-bold leading-[1.1] tracking-[-0.04em] text-[#F7F5FA]`}
                   >
-                    Aakash <span className="text-[#B9A0FF]">Edits Lab</span>
+                    Aakash <span className="text-[#B9A0FF]">Creative Studio</span>
                   </h3>
                   <p className="mt-1.5 text-[13px] font-medium leading-snug text-[#AAA5B5]">
-                    Akash Hanif <span aria-hidden="true">•</span> Video Editor
+                    Aakash Hanif <span aria-hidden="true">•</span> Video Editor
                     &amp; Creative Strategist
                   </p>
                 </div>
@@ -524,12 +524,12 @@ export default function Footer() {
               <div
                 className={`mt-6 flex flex-wrap items-center gap-x-3 gap-y-1 border-t ${BORDER} pt-4 text-[11px] font-bold uppercase leading-none tracking-[0.18em] text-[#AAA5B5]`}
               >
-                <span>Akash Hanif</span>
+                <span>Aakash Hanif</span>
                 <span
                   aria-hidden="true"
                   className="h-px w-8 bg-[rgba(145,100,245,0.4)]"
                 />
-                <span>Aakash Edits Lab</span>
+                <span>Aakash Creative Studio</span>
               </div>
             </motion.div>
 
@@ -737,8 +737,8 @@ export default function Footer() {
 
             <p className="m-0 text-[12.5px] font-medium leading-relaxed text-[#AAA5B5]">
               ©{" "}
-              <span suppressHydrationWarning>{year}</span> Aakash Edits Lab ·
-              Akash Hanif. All rights reserved.
+              <span suppressHydrationWarning>{year}</span> Aakash Creative Studio ·
+              Aakash Hanif. All rights reserved.
             </p>
           </div>
         </div>
