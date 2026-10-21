@@ -1,19 +1,40 @@
+
 "use client";
 
-import {
-  type CSSProperties,
-  type PointerEvent as ReactPointerEvent,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { type CSSProperties, type ReactNode } from "react";
+import { MotionConfig, motion } from "framer-motion";
+import { ArrowDown, ArrowUpRight } from "lucide-react";
+import { Manrope, Space_Grotesk } from "next/font/google";
 
-type Service = {
+/* ------------------------------------------------------------------ */
+/* Fonts: identical configs to Hero, LogoSlider and PortfolioSlider    */
+/* ------------------------------------------------------------------ */
+
+const display = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["700"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const body = Manrope({
+  subsets: ["latin"],
+  weight: ["500", "700"],
+  variable: "--font-body",
+  display: "swap",
+});
+
+/* ------------------------------------------------------------------ */
+/* Types and data                                                      */
+/* ------------------------------------------------------------------ */
+
+export type Service = {
   number: string;
+  /** Use "\n" to break the title into two lines. */
   title: string;
   description: string;
-  accent: "violet" | "indigo" | "fuchsia" | "orchid" | "iris" | "plum";
   featured?: boolean;
+  /** Only set a real, existing anchor or route. Without it the card is static. */
   href?: string;
 };
 
@@ -21,29 +42,28 @@ const SERVICES: Service[] = [
   {
     number: "01",
     title: "Direct Response\nMeta Ads",
-    description: "Performance-led creatives shaped around the hook, message, and moment of conversion.",
-    accent: "violet",
+    description:
+      "Performance-led creatives shaped around the hook, message, and moment of conversion.",
     featured: true,
   },
   {
     number: "02",
     title: "AI UGC\nAds",
-    description: "Native-feeling paid-social creative, built for a modern attention economy.",
-    accent: "indigo",
+    description:
+      "Native-feeling paid-social creative, built for a modern attention economy.",
   },
   {
     number: "03",
     title: "VSL & Sales\nVideos",
-    description: "Long-form edits that guide a clear story with rhythm, structure, and visual intent.",
-    accent: "fuchsia",
+    description:
+      "Long-form edits that guide a clear story with rhythm, structure, and visual intent.",
   },
   {
     number: "04",
     title: "Short-Form\nContent",
-    description: "Reels, TikToks, and Shorts cut for retention without losing the brand’s point of view.",
-    accent: "orchid",
+    description:
+      "Reels, TikToks, and Shorts cut for retention without losing the brand’s point of view.",
   },
-
 ];
 
 export type ServicesSectionProps = {
@@ -53,145 +73,288 @@ export type ServicesSectionProps = {
   services?: Service[];
 };
 
-function ServicePanel({ service, index }: { service: Service; index: number }) {
-  const frame = useRef<number | null>(null);
+/* ------------------------------------------------------------------ */
+/* Design tokens (solid colors only, same palette as the Hero)         */
+/*   Background #08070B   Surface #15121B   Recess #100D15             */
+/*   Violet #9164F5   Deep violet #7A4AE6   Lavender #B9A0FF           */
+/*   Text #F7F5FA   Secondary #AAA5B5                                  */
+/* ------------------------------------------------------------------ */
 
-  const setPointerPosition = (event: ReactPointerEvent<HTMLElement | HTMLAnchorElement>) => {
-    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
-    const element = event.currentTarget;
-    const bounds = element.getBoundingClientRect();
-    const x = (event.clientX - bounds.left) / bounds.width;
-    const y = (event.clientY - bounds.top) / bounds.height;
+const BORDER = "border-[rgba(145,100,245,0.18)]";
 
-    if (frame.current) cancelAnimationFrame(frame.current);
-    frame.current = requestAnimationFrame(() => {
-      element.style.setProperty("--pointer-x", `${(x * 100).toFixed(2)}%`);
-      element.style.setProperty("--pointer-y", `${(y * 100).toFixed(2)}%`);
-      element.style.setProperty("--tilt-x", `${((0.5 - y) * 1.2).toFixed(2)}deg`);
-      element.style.setProperty("--tilt-y", `${((x - 0.5) * 1.3).toFixed(2)}deg`);
-    });
-  };
+const FOCUS =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[#9164F5]";
 
-  const resetPointerPosition = (event: ReactPointerEvent<HTMLElement | HTMLAnchorElement>) => {
-    if (frame.current) cancelAnimationFrame(frame.current);
-    event.currentTarget.style.setProperty("--pointer-x", "50%");
-    event.currentTarget.style.setProperty("--pointer-y", "50%");
-    event.currentTarget.style.setProperty("--tilt-x", "0deg");
-    event.currentTarget.style.setProperty("--tilt-y", "0deg");
-  };
+const CARD_SHADOW: CSSProperties = {
+  boxShadow: [
+    "inset 0 1px 0 rgba(247,245,250,0.06)",
+    "inset 0 -1px 0 rgba(0,0,0,0.5)",
+    "0 1px 2px rgba(0,0,0,0.6)",
+    "0 18px 36px -18px rgba(0,0,0,0.85)",
+  ].join(", "),
+};
 
-  useEffect(() => () => {
-    if (frame.current) cancelAnimationFrame(frame.current);
-  }, []);
+/*
+ * HYDRATION SAFETY
+ * The server cannot know the visitor's "reduce motion" setting. If markup or
+ * props depend on it during render, the server HTML and the first client
+ * render differ and React throws a hydration error. So the entrance props
+ * below are ALWAYS the same, and <MotionConfig reducedMotion="user"> (which
+ * only changes how animations play, never what is rendered) makes Framer
+ * Motion skip transform animation for visitors who prefer reduced motion.
+ * Pure CSS differences use Tailwind's motion-reduce: variants.
+ */
+const reveal = (delay = 0) => ({
+  initial: { opacity: 0, y: 18 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-60px" },
+  transition: { duration: 0.7, ease: EASE, delay },
+});
 
-  const sharedProps = {
-    className: `service-panel service-panel--${service.accent}${service.featured ? " service-panel--featured" : ""}`,
-    onPointerMove: setPointerPosition,
-    onPointerLeave: resetPointerPosition,
-    style: { "--delay": `${index * 90}ms` } as CSSProperties,
-  };
+/* ------------------------------------------------------------------ */
+/* Service card                                                        */
+/* ------------------------------------------------------------------ */
 
-  const inner = <>
-    <span className="service-panel__number" aria-hidden="true">{service.number}</span>
-    <span className="service-panel__topline">
-      <span>Creative format</span>
-      <span className="service-panel__dot" aria-hidden="true" />
-    </span>
-    <div className="service-panel__copy">
-      <h3>{service.title.split("\n").map((line, lineIndex) => <span key={lineIndex}>{line}</span>)}</h3>
-      <p>{service.description}</p>
-    </div>
-    <span className="service-panel__action" aria-hidden="true">
-      <span>{service.href ? "Explore work" : "Selected creative"}</span><b>↗</b>
-    </span>
-  </>;
+function ServiceCard({ service, index }: { service: Service; index: number }) {
+  const lines = service.title
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const plainTitle = lines.join(" ");
+  const isLink = Boolean(service.href);
+  const featured = Boolean(service.featured);
 
-  if (service.href) {
-    return <a {...sharedProps} href={service.href} aria-label={`Explore ${service.title.replace("\n", " ")} work`}>{inner}</a>;
-  }
+  const cardClass = `
+    group relative flex h-full min-h-[20rem] flex-col overflow-hidden
+    rounded-[24px] border bg-[#15121B]
+    p-6 sm:min-h-[22rem] sm:p-8 lg:min-h-[24rem]
+    ${featured ? "border-[rgba(145,100,245,0.42)]" : BORDER}
+    transition-[transform,border-color] duration-500
+    ease-[cubic-bezier(0.22,1,0.36,1)]
+    motion-reduce:transition-none
+    md:hover:-translate-y-1
+    md:hover:border-[rgba(185,160,255,0.5)]
+    motion-reduce:md:hover:translate-y-0
+    ${FOCUS}
+  `;
 
-  return <article {...sharedProps}>{inner}</article>;
-}
+  const content: ReactNode = (
+    <>
+      {/* Big index number: fully inside the card, never clipped */}
+      <span
+        aria-hidden="true"
+        className={`
+          ${display.className}
+          pointer-events-none absolute right-6 top-5 z-0 select-none
+          pb-[0.12em] pr-[0.04em]
+          text-[6.5rem] font-bold leading-none tracking-[-0.06em] tabular-nums
+          sm:right-8 sm:top-6 sm:text-[8rem]
+          lg:text-[9.5rem]
+          transition-colors duration-500 motion-reduce:transition-none
+          ${
+            featured
+              ? "text-[rgba(145,100,245,0.22)] group-hover:text-[rgba(145,100,245,0.3)]"
+              : "text-[rgba(145,100,245,0.12)] group-hover:text-[rgba(145,100,245,0.2)]"
+          }
+        `}
+      >
+        {service.number}
+      </span>
 
-export default function ServicesSection({ portfolioHref, services = SERVICES }: ServicesSectionProps) {
-  const sectionRef = useRef<HTMLElement>(null);
-  const [visible, setVisible] = useState(false);
+      {/* Top label */}
+      <span className="relative z-10 flex items-center gap-2.5 text-[11px] font-bold uppercase leading-none tracking-[0.18em] text-[#AAA5B5]">
+        <span
+          aria-hidden="true"
+          className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#9164F5]"
+        />
+        Creative format
+      </span>
 
-  useEffect(() => {
-    const section = sectionRef.current;
-    if (!section) return;
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) {
-        setVisible(true);
-        observer.disconnect();
-      }
-    }, { threshold: 0.12 });
-    observer.observe(section);
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <section id="services" ref={sectionRef} className={`services-section ${visible ? "services-section--visible" : ""}`} aria-labelledby="services-heading">
-      <div className="services-section__atmosphere" aria-hidden="true" />
-      <div className="services-section__inner">
-        <header className="services-intro">
-          <p className="services-eyebrow"><span /> Services</p>
-          <h2 id="services-heading">Built for attention.<br /><em>Designed to perform.</em></h2>
-          <p className="services-intro__copy">Creative direction and post-production for paid ads, sales stories, social content, and cinematic brand moments.</p>
-        </header>
-
-        <div className="services-grid" aria-label="Creative services">
-          {services.map((service, index) => <ServicePanel key={`${service.number}-${service.title}`} service={service} index={index} />)}
-        </div>
-
-        <div className="services-outro">
-          {portfolioHref ? (
-            <a className="services-outro__link" href={portfolioHref}>Explore the work <span aria-hidden="true">↓</span></a>
-          ) : (
-            <p className="services-outro__label">Selected work <span aria-hidden="true">↓</span></p>
-          )}
-        </div>
+      {/* Copy */}
+      <div className="relative z-10 mb-7 mt-auto pt-24 sm:pt-28">
+        <h3
+          className={`${display.className} text-[clamp(1.9rem,8.4vw,2.4rem)] font-bold leading-[1.04] tracking-[-0.045em] text-[#F7F5FA] sm:text-[2.35rem] lg:text-[2.9rem]`}
+        >
+          {lines.map((line, lineIndex) => (
+            <span
+              key={`${line}-${lineIndex}`}
+              className={`block ${
+                lineIndex === lines.length - 1 && lines.length > 1
+                  ? "text-[#B9A0FF]"
+                  : ""
+              }`}
+            >
+              {line}
+            </span>
+          ))}
+        </h3>
+        <p className="mt-4 max-w-[27rem] text-[15px] font-medium leading-7 text-[#AAA5B5] sm:text-base">
+          {service.description}
+        </p>
       </div>
 
-      {/* Global scope is intentional: ServicePanel is a child component, so styled-jsx
-          scoped selectors would not reach its internal title, copy, and action nodes. */}
-      <style jsx global>{`
-        .services-section { --ink: #f6f3ff; position: relative; overflow: clip; isolation: isolate; background: #050506; color: var(--ink); padding: clamp(7.5rem, 13vw, 13.5rem) 1.25rem clamp(6rem, 11vw, 11rem); }
-        .services-section__inner { width: min(100%, 78rem); margin: 0 auto; position: relative; z-index: 1; }
-        .services-section__atmosphere { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(40rem 25rem at 50% 12%, rgba(114, 57, 208, .11), transparent 67%), radial-gradient(38rem 35rem at 15% 65%, rgba(70, 31, 132, .075), transparent 72%), radial-gradient(32rem 28rem at 86% 78%, rgba(178, 44, 180, .05), transparent 72%); }
-        .services-intro { max-width: 57rem; margin: 0 auto clamp(3.5rem, 6.5vw, 5.75rem); text-align: center; }
-        .services-eyebrow { width: fit-content; display: inline-flex; align-items: center; gap: .55rem; margin: 0 0 1.6rem; padding: .48rem .8rem .48rem .7rem; color: #d8cff0; border: 1px solid rgba(181, 143, 255, .22); border-radius: 999px; background: rgba(15, 11, 20, .72); box-shadow: inset 0 1px rgba(255,255,255,.05), 0 0 1.7rem rgba(121, 65, 224, .08); font-size: .65rem; font-weight: 650; letter-spacing: .16em; line-height: 1; text-transform: uppercase; opacity: 0; transform: translateY(12px); }
-        .services-eyebrow span { width: .35rem; height: .35rem; border-radius: 50%; background: #b88cff; box-shadow: 0 0 .75rem #a76cff; }
-        h2 { margin: 0; color: #fbfaff; font-size: clamp(3rem, 6.3vw, 6.35rem); font-weight: 650; letter-spacing: -.074em; line-height: .91; }
-        h2 em { color: #b99aff; font-style: normal; }
-        .services-intro__copy { max-width: 39rem; margin: 1.65rem auto 0; color: #a49eae; font-size: clamp(1rem, 1.35vw, 1.18rem); letter-spacing: -.02em; line-height: 1.55; opacity: 0; transform: translateY(14px); }
-        .services-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: clamp(.75rem, 1.5vw, 1.15rem); perspective: 1400px; }
-        .service-panel { --pointer-x: 50%; --pointer-y: 50%; --tilt-x: 0deg; --tilt-y: 0deg; position: relative; min-height: clamp(20.5rem, 28vw, 24.5rem); display: flex; flex-direction: column; overflow: hidden; padding: clamp(1.55rem, 2.5vw, 2.35rem); border: 1px solid rgba(229, 218, 255, .13); border-radius: clamp(1.4rem, 2.2vw, 1.9rem); background: #0a0a0d; box-shadow: inset 0 1px rgba(255,255,255,.035), inset 0 -2.8rem 4rem rgba(0,0,0,.16), 0 1.2rem 3.8rem rgba(0,0,0,.12); color: inherit; text-decoration: none; transform: translate3d(0, 18px, 0) rotateX(0deg) rotateY(0deg); opacity: 0; transition: transform 700ms cubic-bezier(.16,1,.3,1), border-color 600ms ease, box-shadow 700ms ease; animation-delay: var(--delay); }
-        .service-panel::before { content: ""; position: absolute; inset: 0; opacity: .72; pointer-events: none; background: radial-gradient(30rem 24rem at var(--pointer-x) var(--pointer-y), rgba(208, 184, 255, .105), transparent 34%), radial-gradient(26rem 18rem at 90% -4%, var(--accent), transparent 55%); transition: opacity 700ms ease, background-position 90ms linear; }
-        .service-panel::after { content: ""; position: absolute; inset: 1px; border-radius: inherit; pointer-events: none; background: linear-gradient(135deg, rgba(255,255,255,.045), transparent 25%, transparent 70%, rgba(255,255,255,.015)); }
-        .service-panel--violet { --accent: rgba(116, 77, 243, .47); } .service-panel--indigo { --accent: rgba(55, 84, 218, .42); } .service-panel--fuchsia { --accent: rgba(192, 56, 190, .38); } .service-panel--orchid { --accent: rgba(142, 72, 203, .41); } .service-panel--iris { --accent: rgba(91, 91, 211, .38); } .service-panel--plum { --accent: rgba(143, 50, 166, .37); }
-        .service-panel--featured { border-color: rgba(185, 151, 255, .22); }
-        .service-panel__number { position: absolute; z-index: 0; top: -.1em; right: .03em; color: rgba(203, 180, 255, .095); font-size: clamp(8rem, 14vw, 12.5rem); font-weight: 700; letter-spacing: -.11em; line-height: .78; user-select: none; }
-        .service-panel__topline, .service-panel__copy, .service-panel__action { position: relative; z-index: 1; }
-        .service-panel__topline { display: flex; align-items: center; justify-content: space-between; color: rgba(226,219,240,.54); font-size: .61rem; font-weight: 650; letter-spacing: .13em; line-height: 1; text-transform: uppercase; }
-        .service-panel__dot { width: .35rem; height: .35rem; border-radius: 50%; background: #bea1ff; box-shadow: 0 0 .7rem rgba(183, 140, 255, .9); }
-        .service-panel__copy { margin: auto 0 1.6rem; max-width: 28rem; }
-        .service-panel h3 { display: grid; margin: 0; font-size: clamp(2rem, 3.35vw, 3.7rem); font-weight: 590; letter-spacing: -.07em; line-height: .91; text-wrap: balance; }
-        .service-panel h3 span:last-child { color: #c5aaff; }
-        .service-panel p { max-width: 29rem; margin: 1.2rem 0 0; color: #aaa5b1; font-size: clamp(.9rem, 1.13vw, 1rem); letter-spacing: -.02em; line-height: 1.5; }
-        .service-panel__action { display: flex; align-items: center; justify-content: space-between; min-height: 2.75rem; padding-top: 1rem; border-top: 1px solid rgba(230,220,255,.10); color: #d6cae9; font-size: .69rem; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; }
-        .service-panel__action b { display: grid; width: 2.25rem; height: 2.25rem; place-items: center; border: 1px solid rgba(222,209,255,.16); border-radius: 50%; color: #f7f2ff; font-size: 1rem; font-weight: 400; transition: transform 550ms cubic-bezier(.16,1,.3,1), background 550ms ease, border-color 550ms ease; }
-        .services-outro { display: flex; justify-content: center; padding-top: clamp(4rem, 7vw, 6.5rem); opacity: 0; transform: translateY(12px); }
-        .services-outro__label, .services-outro__link { display: inline-flex; align-items: center; gap: .65rem; margin: 0; padding: .66rem .88rem; border: 1px solid rgba(213, 196, 247, .17); border-radius: 999px; background: rgba(11,10,14,.72); color: #d7cfe3; font-size: .67rem; font-weight: 650; letter-spacing: .11em; text-decoration: none; text-transform: uppercase; transition: border-color 300ms ease, background 300ms ease; }
-        .services-outro__link:hover { border-color: rgba(198, 165, 255, .46); background: rgba(39, 23, 62, .7); }
-        .services-outro__link:focus-visible, .service-panel:focus-visible { outline: 2px solid #c09aff; outline-offset: 4px; }
-        .services-section--visible .services-eyebrow { animation: arrive 700ms cubic-bezier(.16,1,.3,1) forwards; } .services-section--visible h2 { animation: arrive 760ms 70ms cubic-bezier(.16,1,.3,1) forwards; } .services-section--visible .services-intro__copy { animation: arrive 700ms 150ms cubic-bezier(.16,1,.3,1) forwards; } .services-section--visible .service-panel { animation: panel-in 850ms var(--delay) cubic-bezier(.16,1,.3,1) forwards; } .services-section--visible .services-outro { animation: arrive 700ms 580ms cubic-bezier(.16,1,.3,1) forwards; }
-        @keyframes arrive { to { opacity: 1; transform: translateY(0); } } @keyframes panel-in { to { opacity: 1; transform: translate3d(0, 0, 0); } }
-        @media (hover: hover) and (pointer: fine) { .service-panel:hover { z-index: 2; border-color: rgba(205, 180, 255, .34); box-shadow: inset 0 1px rgba(255,255,255,.07), inset 0 -2.8rem 4rem rgba(0,0,0,.16), 0 1.9rem 4.5rem rgba(0,0,0,.32), 0 0 3rem rgba(104, 61, 180, .10); transform: translate3d(0, -6px, 0) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) scale(1.006); } .service-panel:hover::before { opacity: 1; } .service-panel:hover .service-panel__action b { transform: translate(3px, -3px); border-color: rgba(213, 190, 255, .37); background: rgba(175, 130, 255, .12); } .service-panel:hover h3 { color: #fff; } }
-        @media (max-width: 640px) { .services-section { padding-inline: 1rem; } .services-intro { margin-bottom: 2.75rem; } h2 { font-size: clamp(2.45rem, 12vw, 3.5rem); line-height: .94; } .services-intro__copy { margin-top: 1.35rem; font-size: .98rem; } .services-grid { grid-template-columns: 1fr; gap: .75rem; } .service-panel { min-height: 17.75rem; padding: 1.4rem; } .service-panel__number { font-size: 8.5rem; } .service-panel h3 { font-size: clamp(2rem, 10vw, 2.8rem); } .service-panel p { max-width: 23rem; } }
-        @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } .services-eyebrow, .services-intro__copy, .service-panel, .services-outro { opacity: 1; transform: none; } }
-      `}</style>
-    </section>
+      {/* Action row */}
+      <span
+        className={`relative z-10 flex min-h-12 items-center justify-between gap-4 border-t pt-4 ${BORDER}`}
+      >
+        <span className="text-[13px] font-bold leading-none tracking-[-0.005em] text-[#B9A0FF]">
+          {isLink ? "Explore work" : "Selected creative"}
+        </span>
+
+        {isLink ? (
+          <span
+            aria-hidden="true"
+            className="
+              grid h-10 w-10 shrink-0 place-items-center rounded-full
+              border border-[rgba(145,100,245,0.3)] bg-[#100D15] text-[#F7F5FA]
+              transition-[background-color,border-color,color,transform] duration-300
+              motion-reduce:transition-none
+              group-hover:border-[#9164F5] group-hover:bg-[#9164F5] group-hover:text-[#08070B]
+            "
+          >
+            <ArrowUpRight
+              className="
+                h-[18px] w-[18px] transition-transform duration-300
+                motion-reduce:transition-none
+                group-hover:-translate-y-px group-hover:translate-x-px
+                motion-reduce:group-hover:translate-x-0 motion-reduce:group-hover:translate-y-0
+              "
+            />
+          </span>
+        ) : (
+          <span
+            aria-hidden="true"
+            className="h-2 w-2 shrink-0 rounded-full bg-[#9164F5]"
+          />
+        )}
+      </span>
+    </>
+  );
+
+  return (
+    <motion.div {...reveal(Math.min(index, 3) * 0.08)} className="h-full">
+      {isLink ? (
+        <a
+          href={service.href}
+          aria-label={`Explore ${plainTitle} work`}
+          style={CARD_SHADOW}
+          className={`${cardClass} text-left no-underline`}
+        >
+          {content}
+        </a>
+      ) : (
+        <article style={CARD_SHADOW} className={cardClass}>
+          {content}
+        </article>
+      )}
+    </motion.div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Section                                                             */
+/* ------------------------------------------------------------------ */
+
+export default function ServicesSection({
+  portfolioHref,
+  services = SERVICES,
+}: ServicesSectionProps) {
+  const outroClass = `
+    inline-flex items-center gap-2.5 rounded-full border ${BORDER}
+    bg-[#15121B] px-5 py-3
+    text-[12px] font-bold uppercase leading-none tracking-[0.16em] text-[#B9A0FF]
+  `;
+
+  return (
+    <MotionConfig reducedMotion="user">
+      <section
+        id="services"
+        aria-labelledby="services-heading"
+        className={`${display.variable} ${body.variable} ${body.className} relative isolate overflow-hidden bg-[#08070B] py-20 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] text-[#F7F5FA] antialiased sm:px-8 sm:py-28`}
+      >
+        <div className="mx-auto max-w-6xl">
+          {/* Header */}
+          <header className="mx-auto max-w-3xl text-center">
+            <motion.p
+              {...reveal(0)}
+              className={`
+                mx-auto mb-5 inline-flex items-center gap-2.5
+                rounded-full border ${BORDER} bg-[#15121B] px-4 py-1.5
+                text-[11px] font-bold uppercase leading-none tracking-[0.24em]
+                text-[#B9A0FF] sm:text-xs
+              `}
+            >
+              <span
+                aria-hidden="true"
+                className="h-1.5 w-1.5 rounded-full bg-[#9164F5]"
+              />
+              Services
+            </motion.p>
+
+            <motion.h2
+              {...reveal(0.06)}
+              id="services-heading"
+              className={`
+                ${display.className}
+                text-[2rem] font-bold leading-[1.05] tracking-[-0.045em]
+                text-[#F7F5FA] [text-wrap:balance]
+                min-[400px]:text-[2.4rem] sm:text-5xl lg:text-[3.75rem]
+              `}
+            >
+              <span className="block">Built for attention</span>
+              <span className="block text-[#9164F5]">Designed to perform.</span>
+            </motion.h2>
+
+            <motion.p
+              {...reveal(0.12)}
+              className="mx-auto mt-5 max-w-xl text-[15px] font-medium leading-7 text-[#AAA5B5] sm:mt-6 sm:text-base"
+            >
+              Creative direction and post-production for paid ads, sales
+              stories, social content, and cinematic brand moments.
+            </motion.p>
+          </header>
+
+          {/* Grid */}
+          <div
+            role="list"
+            aria-label="Creative services"
+            className="mt-12 grid grid-cols-1 gap-3 sm:mt-16 sm:grid-cols-2 sm:gap-5"
+          >
+            {services.map((service, index) => (
+              <div
+                role="listitem"
+                key={`${service.number}-${service.title}`}
+                className="min-w-0"
+              >
+                <ServiceCard service={service} index={index} />
+              </div>
+            ))}
+          </div>
+
+          {/* Outro */}
+          <motion.div
+            {...reveal(0.1)}
+            className="mt-12 flex justify-center sm:mt-16"
+          >
+            {portfolioHref ? (
+              <a
+                href={portfolioHref}
+                className={`${outroClass} transition-[border-color,transform] duration-300 hover:-translate-y-px hover:border-[rgba(185,160,255,0.6)] motion-reduce:transition-none motion-reduce:hover:translate-y-0 ${FOCUS}`}
+              >
+                Explore the work
+                <ArrowDown className="h-4 w-4" aria-hidden="true" />
+              </a>
+            ) : (
+              <p className={`m-0 ${outroClass}`}>
+                Selected work
+                <ArrowDown className="h-4 w-4" aria-hidden="true" />
+              </p>
+            )}
+          </motion.div>
+        </div>
+      </section>
+    </MotionConfig>
   );
 }

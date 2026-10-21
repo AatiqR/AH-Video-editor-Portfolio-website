@@ -1,170 +1,75 @@
 "use client";
 
-import React, {
-  memo,
+import {
   useCallback,
   useEffect,
   useId,
-  useMemo,
   useRef,
   useState,
-  type CSSProperties,
   type KeyboardEvent,
-  type PointerEvent,
 } from "react";
-import useEmblaCarousel from "embla-carousel-react";
-import type { EmblaCarouselType } from "embla-carousel";
-import { motion, useReducedMotion } from "framer-motion";
+import { createPortal } from "react-dom";
 import {
+  ArrowUpRight,
   ChevronLeft,
   ChevronRight,
   Play,
   X,
 } from "lucide-react";
+import { Manrope, Space_Grotesk } from "next/font/google";
 
-interface VideoItem {
-  id: string;
-  title: string;
-  thumbnail: string;
-}
+const display = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["700"],
+  display: "swap",
+});
 
-type Category =
+const body = Manrope({
+  subsets: ["latin"],
+  weight: ["500", "700"],
+  display: "swap",
+});
+
+type CategoryId =
   | "meta-ads"
   | "ai-ugc"
   | "ai-pixar"
   | "claymation";
 
-interface CategoryConfig {
-  id: Category;
+type Video = {
+  id: string;
+  title: string;
+};
+
+type Category = {
+  id: CategoryId;
   label: string;
   badge: string;
   description: string;
-  videos: VideoItem[];
-}
+  videos: Video[];
+};
 
-/* ------------------------------------------------------------------ */
-/* Video data                                                         */
-/* ------------------------------------------------------------------ */
+type ModalState = {
+  category: CategoryId;
+  index: number;
+};
 
-const PORTFOLIO_SHORTS: VideoItem[] = [
-  {
-    id: "50Owt_kxxXg",
-    title: "Meta Ad",
-    thumbnail: "https://img.youtube.com/vi/50Owt_kxxXg/maxresdefault.jpg",
-  },
-  {
-    id: "fUg0ZgZOnyc",
-    title: "Meta Ad",
-    thumbnail: "https://img.youtube.com/vi/fUg0ZgZOnyc/maxresdefault.jpg",
-  },
-  {
-    id: "G7KfcREU1VQ",
-    title: "Meta Ad",
-    thumbnail: "https://img.youtube.com/vi/G7KfcREU1VQ/maxresdefault.jpg",
-  },
-  {
-    id: "c7LlzBb1-eo",
-    title: "Meta Ad",
-    thumbnail: "https://img.youtube.com/vi/c7LlzBb1-eo/maxresdefault.jpg",
-  },
-  {
-    id: "yIzbByLYsig",
-    title: "Meta Ad",
-    thumbnail: "https://img.youtube.com/vi/yIzbByLYsig/maxresdefault.jpg",
-  },
-  {
-    id: "SpPspbPXHDc",
-    title: "Meta Ad",
-    thumbnail: "https://img.youtube.com/vi/SpPspbPXHDc/maxresdefault.jpg",
-  },
-  {
-    id: "hGgSnRN0tds",
-    title: "Meta Ad",
-    thumbnail: "https://img.youtube.com/vi/hGgSnRN0tds/maxresdefault.jpg",
-  },
-];
-
-const AI_UGC: VideoItem[] = [
-  {
-    id: "ejcv1876aNg",
-    title: "UGC",
-    thumbnail: "https://img.youtube.com/vi/ejcv1876aNg/maxresdefault.jpg",
-  },
-  {
-    id: "7vVqH4nsDoM",
-    title: "AI UGC",
-    thumbnail: "https://img.youtube.com/vi/7vVqH4nsDoM/maxresdefault.jpg",
-  },
-  {
-    id: "s6SoieRCmEs",
-    title: "UGC",
-    thumbnail: "https://img.youtube.com/vi/s6SoieRCmEs/maxresdefault.jpg",
-  },
-];
-
-const AI_PIXAR_STYLE: VideoItem[] = [
-  {
-    id: "UA6IilV7fyU",
-    title: "AI Pixar Style",
-    thumbnail: "https://img.youtube.com/vi/UA6IilV7fyU/maxresdefault.jpg",
-  },
-  {
-    id: "dCINneCn-rg",
-    title: "AI Pixar Style",
-    thumbnail: "https://img.youtube.com/vi/dCINneCn-rg/maxresdefault.jpg",
-  },
-  {
-    id: "I4_0tawK7mA",
-    title: "AI Pixar Style",
-    thumbnail: "https://img.youtube.com/vi/I4_0tawK7mA/maxresdefault.jpg",
-  },
-  {
-    id: "o9GtYi5sezU",
-    title: "AI Pixar Style",
-    thumbnail: "https://img.youtube.com/vi/o9GtYi5sezU/maxresdefault.jpg",
-  },
-  {
-    id: "Ol-i9Y48qls",
-    title: "AI Pixar Style",
-    thumbnail: "https://img.youtube.com/vi/Ol-i9Y48qls/maxresdefault.jpg",
-  },
-  {
-    id: "fTmjqNj0jyg",
-    title: "AI Pixar Style",
-    thumbnail: "https://img.youtube.com/vi/fTmjqNj0jyg/maxresdefault.jpg",
-  },
-];
-
-const CLAYMATION: VideoItem[] = [
-  {
-    id: "KhbNNGZCdS0",
-    title: "AI Claymation",
-    thumbnail: "https://img.youtube.com/vi/KhbNNGZCdS0/maxresdefault.jpg",
-  },
-  {
-    id: "siLYCr9e5bo",
-    title: "AI Claymation",
-    thumbnail: "https://img.youtube.com/vi/siLYCr9e5bo/maxresdefault.jpg",
-  },
-  {
-    id: "iqsAP32Kk1o",
-    title: "AI Claymation",
-    thumbnail: "https://img.youtube.com/vi/iqsAP32Kk1o/maxresdefault.jpg",
-  },
-];
-
-/* ------------------------------------------------------------------ */
-/* Categories                                                         */
-/* ------------------------------------------------------------------ */
-
-const CATEGORIES: readonly CategoryConfig[] = [
+const CATEGORIES: Category[] = [
   {
     id: "meta-ads",
     label: "Meta Ads",
     badge: "Meta Ads",
     description:
       "Direct response Facebook and Instagram creatives built around proven conversion frameworks, compelling hooks, and performance-focused editing.",
-    videos: PORTFOLIO_SHORTS,
+    videos: [
+      { id: "50Owt_kxxXg", title: "Meta Ad" },
+      { id: "fUg0ZgZOnyc", title: "Meta Ad" },
+      { id: "G7KfcREU1VQ", title: "Meta Ad" },
+      { id: "c7LlzBb1-eo", title: "Meta Ad" },
+      { id: "yIzbByLYsig", title: "Meta Ad" },
+      { id: "SpPspbPXHDc", title: "Meta Ad" },
+      { id: "hGgSnRN0tds", title: "Meta Ad" },
+    ],
   },
   {
     id: "ai-ugc",
@@ -172,7 +77,11 @@ const CATEGORIES: readonly CategoryConfig[] = [
     badge: "AI UGC",
     description:
       "Authentic AI-generated and UGC-style content designed to look native, relatable, and highly engaging across social platforms.",
-    videos: AI_UGC,
+    videos: [
+      { id: "ejcv1876aNg", title: "UGC" },
+      { id: "7vVqH4nsDoM", title: "AI UGC" },
+      { id: "s6SoieRCmEs", title: "UGC" },
+    ],
   },
   {
     id: "ai-pixar",
@@ -180,7 +89,14 @@ const CATEGORIES: readonly CategoryConfig[] = [
     badge: "Pixar",
     description:
       "Unique animated advertisements inspired by Pixar-style storytelling that make brands instantly memorable and highly shareable.",
-    videos: AI_PIXAR_STYLE,
+    videos: [
+      { id: "UA6IilV7fyU", title: "AI Pixar Style" },
+      { id: "dCINneCn-rg", title: "AI Pixar Style" },
+      { id: "I4_0tawK7mA", title: "AI Pixar Style" },
+      { id: "o9GtYi5sezU", title: "AI Pixar Style" },
+      { id: "Ol-i9Y48qls", title: "AI Pixar Style" },
+      { id: "fTmjqNj0jyg", title: "AI Pixar Style" },
+    ],
   },
   {
     id: "claymation",
@@ -188,542 +104,600 @@ const CATEGORIES: readonly CategoryConfig[] = [
     badge: "Claymation",
     description:
       "Attention-grabbing clay animation creatives that stand out in crowded social feeds and stop the scroll.",
-    videos: CLAYMATION,
+    videos: [
+      { id: "KhbNNGZCdS0", title: "AI Claymation" },
+      { id: "siLYCr9e5bo", title: "AI Claymation" },
+      { id: "iqsAP32Kk1o", title: "AI Claymation" },
+    ],
   },
 ];
 
-/* ------------------------------------------------------------------ */
-/* Shared tokens + helpers                                             */
-/* ------------------------------------------------------------------ */
+const FOCUS =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#9164F5]";
 
-const EASE = [0.16, 1, 0.3, 1] as const;
-
-const SPRING = {
-  type: "spring",
-  stiffness: 380,
-  damping: 32,
-} as const;
-
-const BRAND_GRADIENT =
-  "bg-gradient-to-r from-violet-600 via-purple-500 to-fuchsia-500";
-
-const FOCUS_RING =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-300 focus-visible:ring-offset-2 focus-visible:ring-offset-[#06040d]";
-
-/*
- * Subtle premium starfield.
- * Kept intentionally low-opacity so the section feels darker and more luxurious.
- */
-const STARS: CSSProperties = {
-  backgroundImage: [
-    "radial-gradient(1px 1px at 12% 18%, rgba(255,255,255,.28), transparent)",
-    "radial-gradient(1px 1px at 28% 72%, rgba(216,180,254,.24), transparent)",
-    "radial-gradient(1px 1px at 44% 34%, rgba(255,255,255,.22), transparent)",
-    "radial-gradient(1px 1px at 63% 82%, rgba(255,255,255,.20), transparent)",
-    "radial-gradient(1px 1px at 78% 22%, rgba(232,121,249,.24), transparent)",
-    "radial-gradient(1px 1px at 91% 58%, rgba(255,255,255,.20), transparent)",
-    "radial-gradient(1px 1px at 6% 52%, rgba(216,180,254,.20), transparent)",
-    "radial-gradient(1px 1px at 55% 10%, rgba(255,255,255,.18), transparent)",
-  ].join(","),
-};
-
-/*
- * Cursor-follow glow.
- * Uses CSS variables instead of React state, so pointer movement
- * does not cause component re-renders.
- */
-function trackPointer(event: PointerEvent<HTMLElement>) {
-  if (event.pointerType !== "mouse") return;
-
-  const bounds = event.currentTarget.getBoundingClientRect();
-
-  event.currentTarget.style.setProperty(
-    "--px",
-    `${event.clientX - bounds.left}px`
-  );
-
-  event.currentTarget.style.setProperty(
-    "--py",
-    `${event.clientY - bounds.top}px`
-  );
+function getCategory(id: CategoryId): Category {
+  return CATEGORIES.find((item) => item.id === id) ?? CATEGORIES[0];
 }
 
-const POINTER_DEFAULTS = {
-  "--px": "50%",
-  "--py": "50%",
-} as CSSProperties;
-
-/* ------------------------------------------------------------------ */
-/* Video card                                                          */
-/* ------------------------------------------------------------------ */
-
-interface VideoCardProps {
-  video: VideoItem;
-  badge: string;
-  isPlaying: boolean;
-  onPlay: (id: string) => void;
-  onStop: () => void;
-}
-
-const VideoCard = memo(function VideoCard({
+function Poster({
   video,
-  badge,
-  isPlaying,
-  onPlay,
-  onStop,
-}: VideoCardProps) {
-  const embedUrl = useMemo(
-    () =>
-      `https://www.youtube.com/embed/${video.id}?autoplay=1&rel=0&modestbranding=1&playsinline=1`,
-    [video.id]
-  );
+  className = "",
+}: {
+  video: Video;
+  className?: string;
+}) {
+  const [index, setIndex] = useState(0);
+
+  const sources = [
+    `https://i.ytimg.com/vi/${video.id}/maxresdefault.jpg`,
+    `https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`,
+  ];
+
+  useEffect(() => {
+    setIndex(0);
+  }, [video.id]);
+
+  const src = sources[index];
+
+  if (!src) {
+    return (
+      <div
+        className={`grid place-items-center bg-[#15121B] ${className}`}
+      >
+        <Play className="h-10 w-10 text-[#9164F5]" />
+      </div>
+    );
+  }
 
   return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      key={`${video.id}-${index}`}
+      src={src}
+      alt=""
+      width={540}
+      height={960}
+      loading="lazy"
+      decoding="async"
+      draggable={false}
+      onError={() => {
+        setIndex((current) =>
+          Math.min(current + 1, sources.length)
+        );
+      }}
+      onLoad={(event) => {
+        if (event.currentTarget.naturalWidth < 200) {
+          setIndex((current) =>
+            Math.min(current + 1, sources.length)
+          );
+        }
+      }}
+      className={className}
+    />
+  );
+}
+
+function VideoCard({
+  video,
+  badge,
+  onOpen,
+}: {
+  video: Video;
+  badge: string;
+  onOpen: () => void;
+}) {
+  return (
     <article
-      onPointerMove={trackPointer}
-      style={POINTER_DEFAULTS}
       className="
-        group relative isolate overflow-hidden
-        rounded-[1.6rem]
-        border border-violet-300/10
-        bg-[#0b0716]/85
-        shadow-[0_18px_46px_rgba(0,0,0,0.55),0_0_26px_rgba(124,58,237,0.07)]
-        transition-[transform,border-color,box-shadow]
+        group
+        relative
+        overflow-hidden
+        rounded-[20px]
+        border
+        border-[rgba(145,100,245,0.2)]
+        bg-[#15121B]
+        shadow-[inset_0_1px_0_rgba(247,245,250,0.06),0_14px_28px_-14px_rgba(0,0,0,0.85)]
+        transition-[transform,border-color]
         duration-500
-        ease-[cubic-bezier(0.16,1,0.3,1)]
-        md:hover:-translate-y-1.5
-        md:hover:scale-[1.015]
-        md:hover:border-violet-300/35
-        md:hover:shadow-[0_28px_70px_rgba(0,0,0,0.68),0_0_34px_rgba(168,85,247,0.16)]
+        hover:-translate-y-1
+        hover:border-[rgba(185,160,255,0.5)]
         motion-reduce:transition-none
-        motion-reduce:hover:transform-none
+        motion-reduce:hover:translate-y-0
       "
     >
-      <div className="relative aspect-[9/16] overflow-hidden bg-[#09070f]">
-        {!isPlaying ? (
-          <>
-            <img
-              src={video.thumbnail}
-              alt={video.title}
-              width={540}
-              height={960}
-              loading="lazy"
-              decoding="async"
-              className="
-                h-full w-full object-cover
-                transition-transform
-                duration-700
-                ease-[cubic-bezier(0.16,1,0.3,1)]
-                md:group-hover:scale-[1.035]
-                motion-reduce:transition-none
-              "
-              onError={(event) => {
-                event.currentTarget.style.opacity = "0";
-              }}
-            />
+      <button
+        type="button"
+        onClick={onOpen}
+        aria-haspopup="dialog"
+        aria-label={`Play ${video.title}`}
+        className={`block w-full text-left ${FOCUS}`}
+      >
+        <span className="relative block aspect-[9/16] overflow-hidden bg-[#100D15]">
+          <Poster
+            video={video}
+            className="
+              absolute
+              inset-0
+              h-full
+              w-full
+              object-cover
+              transition-transform
+              duration-700
+              group-hover:scale-[1.035]
+              motion-reduce:transition-none
+              motion-reduce:group-hover:scale-100
+            "
+          />
 
-            {/* Dark cinematic overlay */}
-            <div
-              className="
-                pointer-events-none absolute inset-0
-                bg-gradient-to-t
-                from-[#05040a]/95
-                via-[#05040a]/10
-                to-[#05040a]/30
-              "
-            />
+          <span
+            aria-hidden="true"
+            className="
+              absolute
+              inset-0
+              bg-[rgba(8,7,11,0.25)]
+              transition-colors
+              duration-300
+              group-hover:bg-[rgba(8,7,11,0.12)]
+            "
+          />
 
-            {/* Very subtle hover glow */}
-            <div
-              className="
-                pointer-events-none absolute inset-0
-                opacity-0
-                transition-opacity duration-500
-                md:group-hover:opacity-100
-                motion-reduce:hidden
-              "
-              style={{
-                background:
-                  "radial-gradient(220px circle at var(--px) var(--py), rgba(192,132,252,0.13), transparent 62%)",
-              }}
-              aria-hidden="true"
-            />
+          <span
+            className="
+              absolute
+              left-3
+              top-3
+              rounded-full
+              border
+              border-[rgba(145,100,245,0.35)]
+              bg-[#08070B]
+              px-3
+              py-1.5
+              text-[10px]
+              font-bold
+              uppercase
+              tracking-[0.12em]
+              text-[#B9A0FF]
+            "
+          >
+            {badge}
+          </span>
 
-            {/* Category badge */}
-            <div
+          <span
+            aria-hidden="true"
+            className="
+              absolute
+              left-1/2
+              top-1/2
+              -translate-x-1/2
+              -translate-y-1/2
+            "
+          >
+            <span
               className="
-                absolute left-3 top-3
+                grid
+                place-items-center
                 rounded-full
-                border border-violet-300/20
-                bg-[#06040d]/65
-                px-2.5 py-1
-                backdrop-blur-md
-              "
-            >
-              <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-violet-200/90">
-                {badge}
-              </span>
-            </div>
-
-            {/* Play button */}
-            <button
-              type="button"
-              onClick={() => onPlay(video.id)}
-              aria-label={`Play ${video.title}`}
-              className="
-                absolute inset-0
-                flex items-center justify-center
-                focus-visible:outline-none
-                focus-visible:ring-2
-                focus-visible:ring-inset
-                focus-visible:ring-violet-300
+                border
+                border-[rgba(247,245,250,0.3)]
+                bg-[rgba(8,7,11,0.5)]
+                p-1.5
+                transition-transform
+                duration-300
+                group-hover:scale-110
+                motion-reduce:transition-none
+                motion-reduce:group-hover:scale-100
               "
             >
               <span
                 className="
-                  relative flex h-16 w-16 items-center justify-center
-                  transition-transform
+                  grid
+                  h-14
+                  w-14
+                  place-items-center
+                  rounded-full
+                  bg-[#9164F5]
+                  text-[#08070B]
+                  shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_2px_0_#5B36BD,0_12px_24px_-10px_rgba(0,0,0,0.9)]
+                  transition-colors
                   duration-300
-                  ease-[cubic-bezier(0.16,1,0.3,1)]
-                  group-hover:scale-110
-                  group-active:scale-95
-                  motion-reduce:transition-none
+                  group-hover:bg-[#A27BFF]
                 "
               >
-                {/* Outer ring */}
-                <span
-                  className="
-                    absolute -inset-2
-                    rounded-full
-                    border border-violet-300/20
-                    transition-all duration-500
-                    group-hover:-inset-2.5
-                    group-hover:border-fuchsia-300/35
-                  "
+                <Play
+                  size={23}
+                  fill="currentColor"
+                  strokeWidth={0}
+                  className="ml-1"
                 />
-
-                {/* Premium play surface */}
-                <span
-                  className="
-                    relative flex h-full w-full
-                    items-center justify-center
-                    overflow-hidden rounded-full
-                    border border-white/20
-                    bg-gradient-to-br
-                    from-violet-500/85
-                    via-purple-500/80
-                    to-fuchsia-500/80
-                    text-white
-                    shadow-[0_0_22px_rgba(168,85,247,0.28),inset_0_1px_0_rgba(255,255,255,0.3)]
-                    backdrop-blur-md
-                    transition-[filter,box-shadow]
-                    duration-300
-                    group-hover:brightness-110
-                    group-hover:shadow-[0_0_32px_rgba(217,70,239,0.38),inset_0_1px_0_rgba(255,255,255,0.4)]
-                  "
-                >
-                  <span
-                    className="
-                      pointer-events-none absolute inset-y-0 -left-full
-                      w-full -skew-x-12
-                      bg-gradient-to-r
-                      from-transparent via-white/25 to-transparent
-                      transition-transform duration-700
-                      ease-out
-                      group-hover:translate-x-[250%]
-                      motion-reduce:hidden
-                    "
-                  />
-
-                  <Play
-                    className="relative ml-0.5 h-6 w-6"
-                    fill="currentColor"
-                    aria-hidden="true"
-                  />
-                </span>
               </span>
-            </button>
+            </span>
+          </span>
+        </span>
 
-            {/* Video title */}
-            <footer className="pointer-events-none absolute inset-x-0 bottom-0 p-4 pt-10">
-              <p className="line-clamp-2 text-sm font-semibold leading-snug tracking-[-0.01em] text-white">
-                {video.title}
-              </p>
-            </footer>
-          </>
-        ) : (
-          <div className="absolute inset-0 bg-black">
-            <iframe
-              src={embedUrl}
-              title={video.title}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              className="absolute inset-0 h-full w-full border-0"
+        <span
+          className="
+            flex
+            items-center
+            justify-between
+            gap-3
+            border-t
+            border-[rgba(145,100,245,0.18)]
+            px-4
+            py-4
+          "
+        >
+          <span
+            className={`${display.className} truncate text-[15px] font-bold text-[#F7F5FA]`}
+          >
+            {video.title}
+          </span>
+
+          <span className="inline-flex shrink-0 items-center gap-1 text-[13px] font-bold text-[#B9A0FF]">
+            Watch
+            <ArrowUpRight
+              size={16}
+              className="transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
             />
-
-            <button
-              type="button"
-              onClick={onStop}
-              aria-label={`Close ${video.title}`}
-              className="
-                absolute right-3 top-3 z-10
-                flex h-9 w-9 items-center justify-center
-                rounded-full
-                border border-violet-300/30
-                bg-[#06040d]/75
-                text-white
-                backdrop-blur-md
-                transition-colors
-                hover:border-fuchsia-300
-                hover:bg-violet-500/30
-                focus-visible:outline-none
-                focus-visible:ring-2
-                focus-visible:ring-violet-300
-              "
-            >
-              <X className="h-4 w-4" aria-hidden="true" />
-            </button>
-          </div>
-        )}
-      </div>
+          </span>
+        </span>
+      </button>
     </article>
   );
-});
-
-/* ------------------------------------------------------------------ */
-/* Carousel controls                                                   */
-/* ------------------------------------------------------------------ */
-
-interface CarouselButtonProps {
-  direction: "previous" | "next";
-  disabled: boolean;
-  onClick: () => void;
 }
 
-const CarouselButton = memo(function CarouselButton({
-  direction,
-  disabled,
-  onClick,
-}: CarouselButtonProps) {
-  const isPrevious = direction === "previous";
+function VideoLightbox({
+  category,
+  index,
+  onClose,
+  onStep,
+}: {
+  category: Category;
+  index: number;
+  onClose: () => void;
+  onStep: (direction: number) => void;
+}) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  const video = category.videos[index];
+
+  const count = category.videos.length;
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    const previousPadding = document.body.style.paddingRight;
+
+    const scrollbarWidth =
+      window.innerWidth - document.documentElement.clientWidth;
+
+    document.body.style.overflow = "hidden";
+
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    closeRef.current?.focus({ preventScroll: true });
+
+    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        onStep(-1);
+        return;
+      }
+
+      if (event.key === "ArrowRight") {
+        event.preventDefault();
+        onStep(1);
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const elements = Array.from(
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href]'
+        ) ?? []
+      );
+
+      if (elements.length === 0) {
+        return;
+      }
+
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (
+        !event.shiftKey &&
+        document.activeElement === last
+      ) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      document.body.style.paddingRight = previousPadding;
+    };
+  }, [onClose, onStep]);
+
+  if (!video) {
+    return null;
+  }
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={isPrevious ? "Previous video" : "Next video"}
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`${category.label}: ${video.title}`}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
       className={`
-        flex h-11 w-11 items-center justify-center
-        rounded-full
-        border border-violet-300/20
-        bg-white/[0.035]
-        text-violet-100
-        shadow-[0_0_16px_rgba(124,58,237,0.10)]
-        backdrop-blur-md
-        transition-all
-        duration-300
-        ease-[cubic-bezier(0.16,1,0.3,1)]
-        hover:-translate-y-0.5
-        hover:scale-105
-        hover:border-violet-300/55
-        hover:bg-violet-500/15
-        hover:shadow-[0_0_22px_rgba(168,85,247,0.22)]
-        active:translate-y-0
-        active:scale-95
-        disabled:pointer-events-none
-        disabled:opacity-25
-        motion-reduce:transition-none
-        motion-reduce:hover:transform-none
-        ${FOCUS_RING}
+        ${body.className}
+        fixed
+        inset-0
+        z-[100]
+        flex
+        flex-col
+        bg-[rgba(8,7,11,0.98)]
+        px-4
+        pb-[max(0.75rem,env(safe-area-inset-bottom))]
+        pt-[max(0.75rem,env(safe-area-inset-top))]
+        text-[#F7F5FA]
+        sm:px-6
       `}
     >
-      {isPrevious ? (
-        <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-      ) : (
-        <ChevronRight className="h-5 w-5" aria-hidden="true" />
+      <div className="flex shrink-0 items-center justify-between gap-4 pb-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="shrink-0 rounded-full border border-[rgba(145,100,245,0.35)] bg-[#15121B] px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-[#B9A0FF]">
+            {category.badge}
+          </span>
+
+          <span
+            className={`${display.className} truncate text-[16px] font-bold sm:text-[18px]`}
+          >
+            {video.title}
+          </span>
+        </div>
+
+        <button
+          ref={closeRef}
+          type="button"
+          onClick={onClose}
+          aria-label="Close video"
+          className={`
+            grid
+            h-11
+            w-11
+            shrink-0
+            place-items-center
+            rounded-full
+            border
+            border-[rgba(145,100,245,0.35)]
+            bg-[#15121B]
+            transition-colors
+            hover:border-[#B9A0FF]
+            ${FOCUS}
+          `}
+        >
+          <X size={21} />
+        </button>
+      </div>
+
+      <div className="flex min-h-0 flex-1 items-center justify-center">
+        <div
+          key={video.id}
+          className="
+            relative
+            aspect-[9/16]
+            max-h-full
+            max-w-full
+            overflow-hidden
+            rounded-[18px]
+            border
+            border-[rgba(145,100,245,0.35)]
+            bg-[#100D15]
+            shadow-[0_25px_70px_rgba(0,0,0,0.9)]
+          "
+          style={{
+            height: "100%",
+            width: "auto",
+            maxWidth: "100%",
+            aspectRatio: "9 / 16",
+          }}
+        >
+          <iframe
+            key={video.id}
+            src={`https://www.youtube-nocookie.com/embed/${video.id}?autoplay=1&rel=0&playsinline=1`}
+            title={video.title}
+            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+            allowFullScreen
+            referrerPolicy="strict-origin-when-cross-origin"
+            className="absolute inset-0 h-full w-full border-0"
+          />
+        </div>
+      </div>
+
+      {count > 1 && (
+        <div className="flex shrink-0 items-center justify-center gap-6 pt-4">
+          <button
+            type="button"
+            onClick={() => onStep(-1)}
+            aria-label="Previous video"
+            className={`
+              grid
+              h-12
+              w-12
+              place-items-center
+              rounded-full
+              border
+              border-[rgba(145,100,245,0.35)]
+              bg-[#15121B]
+              transition-colors
+              hover:border-[#B9A0FF]
+              ${FOCUS}
+            `}
+          >
+            <ChevronLeft size={22} />
+          </button>
+
+          <span
+            aria-live="polite"
+            className="min-w-[65px] text-center text-[14px] font-bold tabular-nums text-[#AAA5B5]"
+          >
+            <span className="text-[#F7F5FA]">{index + 1}</span>
+            {" / "}
+            {count}
+          </span>
+
+          <button
+            type="button"
+            onClick={() => onStep(1)}
+            aria-label="Next video"
+            className={`
+              grid
+              h-12
+              w-12
+              place-items-center
+              rounded-full
+              border
+              border-[rgba(145,100,245,0.35)]
+              bg-[#15121B]
+              transition-colors
+              hover:border-[#B9A0FF]
+              ${FOCUS}
+            `}
+          >
+            <ChevronRight size={22} />
+          </button>
+        </div>
       )}
-    </button>
+    </div>
   );
-});
+}
 
-/* ------------------------------------------------------------------ */
-/* Embla carousel hook                                                 */
-/* ------------------------------------------------------------------ */
+export default function PortfolioSlider() {
+  const [activeCategory, setActiveCategory] =
+    useState<CategoryId>("meta-ads");
 
-function usePortfolioCarousel(displayedCategory: Category) {
-  const [emblaRef, emblaApi] = useEmblaCarousel({
-    align: "start",
-    containScroll: "trimSnaps",
-    duration: 28,
-    loop: false,
-  });
+  const [modal, setModal] = useState<ModalState | null>(null);
 
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [snapCount, setSnapCount] = useState(0);
-  const [canScrollPrev, setCanScrollPrev] = useState(false);
-  const [canScrollNext, setCanScrollNext] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  const updateControls = useCallback((api: EmblaCarouselType) => {
-    setSelectedIndex(api.selectedScrollSnap());
-    setSnapCount(api.scrollSnapList().length);
-    setCanScrollPrev(api.canScrollPrev());
-    setCanScrollNext(api.canScrollNext());
+  const [slide, setSlide] = useState(0);
+
+  const [visibleCount, setVisibleCount] = useState(1);
+
+  const sectionId = useId();
+
+  const viewportRef = useRef<HTMLDivElement>(null);
+
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  const triggerRef = useRef<HTMLElement | null>(null);
+
+  const category = getCategory(activeCategory);
+
+  const total = category.videos.length;
+
+  const maxSlide = Math.max(0, total - visibleCount);
+
+  useEffect(() => {
+    setMounted(true);
   }, []);
 
   useEffect(() => {
-    if (!emblaApi) return;
+    const updateVisibleCount = () => {
+      const width = window.innerWidth;
 
-    updateControls(emblaApi);
+      if (width >= 1280) {
+        setVisibleCount(4);
+      } else if (width >= 1024) {
+        setVisibleCount(3);
+      } else if (width >= 640) {
+        setVisibleCount(2);
+      } else {
+        setVisibleCount(1);
+      }
+    };
 
-    emblaApi.on("select", updateControls);
-    emblaApi.on("reInit", updateControls);
+    updateVisibleCount();
+
+    window.addEventListener("resize", updateVisibleCount);
 
     return () => {
-      emblaApi.off("select", updateControls);
-      emblaApi.off("reInit", updateControls);
+      window.removeEventListener("resize", updateVisibleCount);
     };
-  }, [emblaApi, updateControls]);
+  }, []);
 
   useEffect(() => {
-    if (!emblaApi) return;
+    setSlide((current) => Math.min(current, maxSlide));
+  }, [maxSlide]);
 
-    const frame = window.requestAnimationFrame(() => {
-      emblaApi.reInit();
-      emblaApi.scrollTo(0, true);
-      updateControls(emblaApi);
-    });
+  const scrollToSlide = useCallback(
+    (index: number) => {
+      const viewport = viewportRef.current;
 
-    return () => window.cancelAnimationFrame(frame);
-  }, [displayedCategory, emblaApi, updateControls]);
+      if (!viewport) {
+        return;
+      }
 
-  const scrollPrev = useCallback(
-    () => emblaApi?.scrollPrev(),
-    [emblaApi]
-  );
+      const slides = viewport.querySelectorAll<HTMLElement>(
+        "[data-portfolio-slide]"
+      );
 
-  const scrollNext = useCallback(
-    () => emblaApi?.scrollNext(),
-    [emblaApi]
-  );
+      const target = slides[index];
 
-  const scrollTo = useCallback(
-    (index: number) => emblaApi?.scrollTo(index),
-    [emblaApi]
-  );
+      if (!target) {
+        return;
+      }
 
-  return {
-    emblaRef,
-    selectedIndex,
-    snapCount,
-    canScrollPrev,
-    canScrollNext,
-    scrollPrev,
-    scrollNext,
-    scrollTo,
-  };
-}
+      const reducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches;
 
-/* ------------------------------------------------------------------ */
-/* Main section                                                        */
-/* ------------------------------------------------------------------ */
+      viewport.scrollTo({
+        left: target.offsetLeft - slides[0].offsetLeft,
+        behavior: reducedMotion ? "auto" : "smooth",
+      });
 
-const PortfolioSlider: React.FC = () => {
-  const [activeCategory, setActiveCategory] =
-    useState<Category>("meta-ads");
-
-  const [displayedCategory, setDisplayedCategory] =
-    useState<Category>("meta-ads");
-
-  const [isSwitching, setIsSwitching] = useState(false);
-
-  const [activeVideoId, setActiveVideoId] =
-    useState<string | null>(null);
-
-  const reducedMotion = useReducedMotion();
-
-  const panelId = useId();
-
-  const tabRefs =
-    useRef<Array<HTMLButtonElement | null>>([]);
-
-  const activeConfig = useMemo(
-    () =>
-      CATEGORIES.find(
-        (category) => category.id === activeCategory
-      ) ?? CATEGORIES[0]!,
-    [activeCategory]
-  );
-
-  const displayedConfig = useMemo(
-    () =>
-      CATEGORIES.find(
-        (category) => category.id === displayedCategory
-      ) ?? CATEGORIES[0]!,
-    [displayedCategory]
-  );
-
-  const {
-    emblaRef,
-    selectedIndex,
-    snapCount,
-    canScrollPrev,
-    canScrollNext,
-    scrollPrev,
-    scrollNext,
-    scrollTo,
-  } = usePortfolioCarousel(displayedCategory);
-
-  /* -------------------------------------------------------------- */
-  /* Category transition                                             */
-  /* -------------------------------------------------------------- */
-
-  useEffect(() => {
-    if (activeCategory === displayedCategory) return;
-
-    if (reducedMotion) {
-      setDisplayedCategory(activeCategory);
-      setIsSwitching(false);
-      return;
-    }
-
-    setIsSwitching(true);
-
-    const timer = window.setTimeout(() => {
-      setDisplayedCategory(activeCategory);
-      setIsSwitching(false);
-    }, 150);
-
-    return () => window.clearTimeout(timer);
-  }, [
-    activeCategory,
-    displayedCategory,
-    reducedMotion,
-  ]);
-
-  const selectCategory = useCallback(
-    (category: Category) => {
-      // Stop currently playing video when switching categories.
-      setActiveVideoId(null);
-      setActiveCategory(category);
+      setSlide(index);
     },
     []
   );
 
-  const stopVideo = useCallback(
-    () => setActiveVideoId(null),
-    []
-  );
+  const changeCategory = useCallback((id: CategoryId) => {
+    setActiveCategory(id);
+    setSlide(0);
 
-  /* -------------------------------------------------------------- */
-  /* Keyboard category navigation                                   */
-  /* -------------------------------------------------------------- */
+    if (viewportRef.current) {
+      viewportRef.current.scrollTo({
+        left: 0,
+        behavior: "instant",
+      });
+    }
+  }, []);
 
   const handleTabKeyDown = useCallback(
-    (
-      event: KeyboardEvent<HTMLButtonElement>,
-      index: number
-    ) => {
+    (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
       if (
         !["ArrowLeft", "ArrowRight", "Home", "End"].includes(
           event.key
@@ -734,553 +708,403 @@ const PortfolioSlider: React.FC = () => {
 
       event.preventDefault();
 
-      const nextIndex =
-        event.key === "Home"
-          ? 0
-          : event.key === "End"
-            ? CATEGORIES.length - 1
-            : (index +
-                (event.key === "ArrowRight" ? 1 : -1) +
-                CATEGORIES.length) %
-              CATEGORIES.length;
+      let next = index;
 
-      selectCategory(CATEGORIES[nextIndex]!.id);
+      if (event.key === "Home") {
+        next = 0;
+      } else if (event.key === "End") {
+        next = CATEGORIES.length - 1;
+      } else if (event.key === "ArrowRight") {
+        next = (index + 1) % CATEGORIES.length;
+      } else {
+        next =
+          (index - 1 + CATEGORIES.length) % CATEGORIES.length;
+      }
 
-      tabRefs.current[nextIndex]?.focus();
+      changeCategory(CATEGORIES[next].id);
+
+      tabRefs.current[next]?.focus();
     },
-    [selectCategory]
+    [changeCategory]
   );
 
-  /* -------------------------------------------------------------- */
-  /* Scroll reveal                                                   */
-  /* -------------------------------------------------------------- */
+  const openVideo = useCallback(
+    (index: number) => {
+      triggerRef.current =
+        document.activeElement as HTMLElement | null;
 
-  const reveal = (delay = 0) =>
-    reducedMotion
-      ? {}
-      : {
-          initial: {
-            opacity: 0,
-            y: 18,
-          },
-          whileInView: {
-            opacity: 1,
-            y: 0,
-          },
-          viewport: {
-            once: true,
-            margin: "-60px",
-          },
-          transition: {
-            duration: 0.6,
-            ease: EASE,
-            delay,
-          },
-        };
+      setModal({
+        category: activeCategory,
+        index,
+      });
+    },
+    [activeCategory]
+  );
+
+  const closeVideo = useCallback(() => {
+    setModal(null);
+
+    window.setTimeout(() => {
+      triggerRef.current?.focus({ preventScroll: true });
+    }, 0);
+  }, []);
+
+  const stepVideo = useCallback((direction: number) => {
+    setModal((current) => {
+      if (!current) {
+        return null;
+      }
+
+      const videos = getCategory(current.category).videos;
+
+      const count = videos.length;
+
+      if (count === 0) {
+        return current;
+      }
+
+      return {
+        ...current,
+        index: (current.index + direction + count) % count,
+      };
+    });
+  }, []);
 
   return (
     <section
-      className="
-        relative isolate overflow-hidden
-        bg-[#06040d]
-        px-4 py-20
-        text-white
-        sm:py-28
-      "
+      id="work"
       aria-labelledby="portfolio-heading"
+      className={`
+        ${body.className}
+        relative
+        isolate
+        overflow-hidden
+        bg-[#08070B]
+        px-4
+        py-20
+        text-[#F7F5FA]
+        antialiased
+        sm:px-6
+        sm:py-28
+      `}
     >
-      {/* ---------------------------------------------------------- */}
-      {/* Background                                                  */}
-      {/* ---------------------------------------------------------- */}
-
-      <div
-        className="pointer-events-none absolute inset-0 -z-10"
-        aria-hidden="true"
-      >
-        {/* Main ambient violet light - deliberately reduced */}
-        <div
-          className="
-            absolute left-1/2 top-[-6rem]
-            h-[34rem] w-[58rem]
-            max-w-[140vw]
-            -translate-x-1/2
-            bg-[radial-gradient(ellipse_at_center,rgba(124,58,237,0.13),transparent_68%)]
-          "
-        />
-
-        {/* Secondary ambient light - subtle */}
-        <div
-          className="
-            absolute bottom-[-8rem] right-[-6rem]
-            h-[26rem] w-[26rem]
-            bg-[radial-gradient(circle_at_center,rgba(217,70,239,0.055),transparent_70%)]
-          "
-        />
-
-        {/* Darker star field */}
-        <div
-          className="absolute inset-0 opacity-55"
-          style={STARS}
-        />
-
-        {/* Cinematic vignette */}
-        <div
-          className="
-            absolute inset-0
-            bg-[radial-gradient(ellipse_at_center,transparent_38%,rgba(6,4,13,0.90)_100%)]
-          "
-        />
-      </div>
-
-      <div className="mx-auto max-w-5xl">
-        {/* -------------------------------------------------------- */}
-        {/* Header                                                     */}
-        {/* -------------------------------------------------------- */}
-
+      <div className="mx-auto max-w-6xl">
         <header className="mx-auto max-w-3xl text-center">
-          <motion.p
-            {...reveal(0)}
+          <p
             className="
-              mx-auto mb-5
-              inline-flex items-center gap-2
+              mx-auto
+              mb-5
+              inline-flex
+              items-center
+              gap-2.5
               rounded-full
-              border border-violet-300/15
-              bg-white/[0.025]
-              px-4 py-1.5
+              border
+              border-[rgba(145,100,245,0.2)]
+              bg-[#15121B]
+              px-4
+              py-2
               text-[11px]
-              font-semibold
+              font-bold
               uppercase
-              tracking-[0.28em]
-              text-violet-200/85
-              backdrop-blur-md
+              tracking-[0.22em]
+              text-[#B9A0FF]
             "
           >
-            <span
-              className="
-                h-1.5 w-1.5
-                rounded-full
-                bg-fuchsia-400/80
-                shadow-[0_0_8px_rgba(232,121,249,0.55)]
-              "
-            />
-
+            <span className="h-1.5 w-1.5 rounded-full bg-[#9164F5]" />
             Portfolio
-          </motion.p>
+          </p>
 
-          <motion.h2
-            {...reveal(0.06)}
+          <h2
             id="portfolio-heading"
-            className="
-              text-4xl
-              font-extrabold
-              tracking-[-0.055em]
-              text-white
-              sm:text-5xl
-              lg:text-6xl
-            "
+            className={`
+              ${display.className}
+              text-[clamp(2rem,6vw,3.75rem)]
+              font-bold
+              leading-[1.08]
+              tracking-[-0.045em]
+              text-[#F7F5FA]
+            `}
           >
             Creative Work That{" "}
-            <span
-              className="
-                bg-gradient-to-r
-                from-violet-300
-                via-fuchsia-400
-                to-purple-400
-                bg-clip-text
-                text-transparent
-              "
-            >
+            <span className="text-[#9164F5]">
               Stops The Scroll
             </span>
-          </motion.h2>
+          </h2>
 
-          <motion.p
-            {...reveal(0.12)}
-            className="
-              mx-auto mt-6
-              max-w-2xl
-              text-sm
-              leading-7
-              text-violet-100/60
-              sm:text-base
-            "
-          >
-            Explore Meta ads, AI UGC & UGC campaigns, VSLs,
-            Pixar-style animations, and Claymation creatives:
-            direct-response ads made to capture attention and
-            drive action.
-          </motion.p>
+          <p className="mx-auto mt-6 max-w-2xl text-[15px] font-medium leading-7 text-[#AAA5B5] sm:text-base">
+            Explore Meta ads, AI UGC &amp; UGC campaigns,
+            VSLs, Pixar-style animations, and Claymation
+            creatives: direct-response ads made to capture
+            attention and drive action.
+          </p>
         </header>
 
-        {/* -------------------------------------------------------- */}
-        {/* Category controls                                          */}
-        {/* -------------------------------------------------------- */}
-
         <nav
-          className="mx-auto mt-10 max-w-3xl"
           aria-label="Portfolio categories"
+          className="mx-auto mt-11 max-w-3xl"
         >
           <div
             role="tablist"
             aria-orientation="horizontal"
-            className="
-              grid
-              grid-cols-2
-              gap-2.5
-              sm:grid-cols-4
-              sm:gap-3
-            "
+            className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 sm:gap-3"
           >
-            {CATEGORIES.map((category, index) => {
-              const isActive =
-                category.id === activeCategory;
+            {CATEGORIES.map((item, index) => {
+              const active = activeCategory === item.id;
 
               return (
-                <motion.div
-                  key={category.id}
-                  {...reveal(0.18 + index * 0.06)}
+                <button
+                  key={item.id}
+                  ref={(element) => {
+                    tabRefs.current[index] = element;
+                  }}
+                  id={`${sectionId}-tab-${item.id}`}
+                  type="button"
+                  role="tab"
+                  aria-controls={`${sectionId}-panel`}
+                  aria-selected={active}
+                  tabIndex={active ? 0 : -1}
+                  onClick={() => changeCategory(item.id)}
+                  onKeyDown={(event) =>
+                    handleTabKeyDown(event, index)
+                  }
+                  className={`
+                    relative
+                    min-h-[54px]
+                    min-w-0
+                    rounded-2xl
+                    border
+                    px-3
+                    py-3.5
+                    text-center
+                    text-[13px]
+                    font-bold
+                    transition-[background-color,border-color,color,transform]
+                    duration-300
+                    sm:text-[14px]
+                    ${FOCUS}
+                    ${
+                      active
+                        ? "border-[#9164F5] bg-[#9164F5] text-[#08070B] shadow-[inset_0_1px_0_rgba(255,255,255,0.3),0_2px_0_#5B36BD]"
+                        : "border-[rgba(145,100,245,0.2)] bg-[#15121B] text-[#AAA5B5] hover:-translate-y-0.5 hover:border-[#B9A0FF] hover:text-[#F7F5FA]"
+                    }
+                  `}
                 >
-                  <button
-                    ref={(element) => {
-                      tabRefs.current[index] = element;
-                    }}
-                    id={`${panelId}-tab-${category.id}`}
-                    type="button"
-                    role="tab"
-                    aria-controls={panelId}
-                    aria-selected={isActive}
-                    tabIndex={isActive ? 0 : -1}
-                    onClick={() =>
-                      selectCategory(category.id)
-                    }
-                    onKeyDown={(event) =>
-                      handleTabKeyDown(event, index)
-                    }
-                    onPointerMove={trackPointer}
-                    style={POINTER_DEFAULTS}
-                    className={`
-                      group relative w-full min-w-0
-                      rounded-2xl
-                      border
-                      px-4 py-3.5
-                      text-left
-                      transition-[transform,border-color,background-color]
-                      duration-300
-                      ease-[cubic-bezier(0.16,1,0.3,1)]
-                      motion-reduce:transition-none
-                      sm:py-4
-                      ${FOCUS_RING}
-
-                      ${
-                        isActive
-                          ? "-translate-y-0.5 border-white/25"
-                          : "border-violet-300/12 bg-white/[0.025] hover:-translate-y-0.5 hover:scale-[1.02] hover:border-violet-300/40 hover:bg-violet-500/[0.06] motion-reduce:hover:transform-none"
-                      }
-                    `}
-                  >
-                    {/* Active category background */}
-                    {isActive && (
-                      <motion.span
-                        layoutId="portfolio-tab-bg"
-                        transition={
-                          reducedMotion
-                            ? { duration: 0 }
-                            : SPRING
-                        }
-                        className={`
-                          absolute inset-0
-                          rounded-2xl
-                          ${BRAND_GRADIENT}
-                          shadow-[0_0_26px_rgba(168,85,247,0.30),inset_0_1px_0_rgba(255,255,255,0.30)]
-                        `}
-                      >
-                        <span
-                          className="
-                            absolute inset-0
-                            overflow-hidden
-                            rounded-2xl
-                          "
-                          aria-hidden="true"
-                        >
-                          {!reducedMotion && (
-                            <motion.span
-                              className="
-                                absolute inset-y-0 left-0
-                                w-1/3
-                                -skew-x-12
-                                bg-gradient-to-r
-                                from-transparent
-                                via-white/20
-                                to-transparent
-                              "
-                              animate={{
-                                x: ["-120%", "380%"],
-                              }}
-                              transition={{
-                                duration: 1.8,
-                                ease: "easeInOut",
-                                repeat: Infinity,
-                                repeatDelay: 3.2,
-                              }}
-                            />
-                          )}
-                        </span>
-                      </motion.span>
-                    )}
-
-                    {/* Hover cursor glow */}
-                    {!isActive && (
-                      <span
-                        aria-hidden="true"
-                        className="
-                          pointer-events-none
-                          absolute inset-0
-                          rounded-2xl
-                          opacity-0
-                          transition-opacity duration-300
-                          motion-reduce:hidden
-                          [@media(hover:hover)]:group-hover:opacity-100
-                        "
-                        style={{
-                          background:
-                            "radial-gradient(120px circle at var(--px) var(--py), rgba(192,132,252,0.15), transparent 70%)",
-                        }}
-                      />
-                    )}
-
-                    <span
-                      className="
-                        pointer-events-none
-                        absolute inset-x-5 top-0
-                        h-px
-                        bg-gradient-to-r
-                        from-transparent
-                        via-white/30
-                        to-transparent
-                      "
-                    />
-
-                    {/* Number intentionally removed */}
-
-                    <span
-                      className={`
-                        relative block
-                        truncate
-                        text-sm
-                        font-semibold
-                        tracking-[0.02em]
-                        transition-colors
-                        duration-300
-
-                        ${
-                          isActive
-                            ? "text-white"
-                            : "text-zinc-400 group-hover:text-white"
-                        }
-                      `}
-                    >
-                      {category.label}
-                    </span>
-
-                    {isActive && (
-                      <motion.span
-                        layoutId="portfolio-tab-indicator"
-                        transition={
-                          reducedMotion
-                            ? { duration: 0 }
-                            : SPRING
-                        }
-                        className="
-                          absolute inset-x-5 -bottom-px
-                          h-[2px]
-                          rounded-full
-                          bg-gradient-to-r
-                          from-transparent
-                          via-white
-                          to-transparent
-                          shadow-[0_0_10px_rgba(232,121,249,0.65)]
-                        "
-                      />
-                    )}
-                  </button>
-                </motion.div>
+                  {item.label}
+                </button>
               );
             })}
           </div>
         </nav>
 
-        {/* -------------------------------------------------------- */}
-        {/* Showcase                                                   */}
-        {/* -------------------------------------------------------- */}
-
-        <motion.div
-          {...reveal(0.3)}
-          id={panelId}
+        <div
+          id={`${sectionId}-panel`}
           role="tabpanel"
-          aria-labelledby={`${panelId}-tab-${activeCategory}`}
+          aria-labelledby={`${sectionId}-tab-${activeCategory}`}
           className="mt-10 sm:mt-12"
         >
-          <p
-            className="
-              mx-auto mb-7
-              min-h-[4.5rem]
-              max-w-xl
-              text-center
-              text-sm
-              leading-6
-              text-violet-100/50
-              sm:mb-8
-              sm:min-h-[3rem]
-              sm:text-base
-            "
-          >
-            {activeConfig.description}
+          <p className="mx-auto mb-8 min-h-[72px] max-w-xl text-center text-[15px] font-medium leading-7 text-[#AAA5B5] sm:min-h-[56px] sm:text-base">
+            {category.description}
           </p>
 
-          <motion.div
-            initial={false}
-            animate={
-              isSwitching
-                ? {
-                    opacity: 0,
-                    y: -6,
-                    filter: "blur(6px)",
-                  }
-                : {
-                    opacity: 1,
-                    y: 0,
-                    filter: "blur(0px)",
-                  }
-            }
-            transition={
-              reducedMotion
-                ? { duration: 0 }
-                : {
-                    duration: isSwitching ? 0.15 : 0.3,
-                    ease: EASE,
-                  }
-            }
-            className="will-change-[opacity,transform]"
+          <div
+            className="
+              relative
+              rounded-[26px]
+              border
+              border-[rgba(145,100,245,0.2)]
+              bg-[#100D15]
+              p-2.5
+              shadow-[inset_0_1px_0_rgba(247,245,250,0.05),0_30px_60px_-30px_rgba(0,0,0,0.85)]
+              sm:p-4
+            "
           >
             <div
+              ref={viewportRef}
+              onScroll={(event) => {
+                const element = event.currentTarget;
+
+                const firstSlide =
+                  element.querySelector<HTMLElement>(
+                    "[data-portfolio-slide]"
+                  );
+
+                if (!firstSlide) {
+                  return;
+                }
+
+                const secondSlide =
+                  firstSlide.nextElementSibling as HTMLElement | null;
+
+                const step = secondSlide
+                  ? secondSlide.offsetLeft - firstSlide.offsetLeft
+                  : firstSlide.offsetWidth;
+
+                if (step <= 0) {
+                  return;
+                }
+
+                const current = Math.round(element.scrollLeft / step);
+
+                setSlide(Math.min(Math.max(0, current), maxSlide));
+              }}
               className="
                 relative
-                rounded-[2rem]
-                border border-violet-300/8
-                bg-gradient-to-b
-                from-white/[0.035]
-                to-white/[0.008]
-                p-2.5
-                shadow-[inset_0_1px_0_rgba(255,255,255,0.055),0_30px_80px_rgba(0,0,0,0.52)]
-                sm:p-4
+                flex
+                snap-x
+                snap-mandatory
+                gap-4
+                overflow-x-auto
+                rounded-[18px]
+                scroll-smooth
+                overscroll-x-contain
+                [scrollbar-width:none]
+                [&::-webkit-scrollbar]:hidden
               "
+              aria-label={`${category.label} video showcase`}
             >
-              <div
-                ref={emblaRef}
-                className="overflow-hidden rounded-[1.5rem]"
-              >
+              {category.videos.map((video, index) => (
                 <div
-                  className="-ml-4 flex"
-                  role="list"
-                  aria-label={`${displayedConfig.label} video showcase`}
+                  key={`${activeCategory}-${video.id}`}
+                  data-portfolio-slide
+                  className="
+                    min-w-0
+                    flex-[0_0_calc(82%-0px)]
+                    snap-start
+                    py-2
+                    sm:flex-[0_0_calc(50%-8px)]
+                    lg:flex-[0_0_calc(33.333%-11px)]
+                    xl:flex-[0_0_calc(25%-12px)]
+                  "
                 >
-                  {displayedConfig.videos.map((video) => (
-                    <div
-                      key={`${displayedCategory}-${video.id}`}
-                      role="listitem"
-                      className="
-                        min-w-0
-                        flex-[0_0_82%]
-                        py-2 pl-4
-                        sm:flex-[0_0_48%]
-                        lg:flex-[0_0_33.333%]
-                        xl:flex-[0_0_25%]
-                      "
-                    >
-                      <VideoCard
-                        video={video}
-                        badge={displayedConfig.badge}
-                        isPlaying={
-                          activeVideoId === video.id
-                        }
-                        onPlay={setActiveVideoId}
-                        onStop={stopVideo}
-                      />
-                    </div>
-                  ))}
+                  <VideoCard
+                    video={video}
+                    badge={category.badge}
+                    onOpen={() => openVideo(index)}
+                  />
                 </div>
-              </div>
+              ))}
             </div>
-          </motion.div>
+          </div>
 
-          {/* ------------------------------------------------------ */}
-          {/* Carousel controls                                       */}
-          {/* ------------------------------------------------------ */}
-
-          <div className="mt-7 flex items-center justify-center gap-5 sm:mt-8">
-            <CarouselButton
-              direction="previous"
-              disabled={!canScrollPrev}
-              onClick={scrollPrev}
-            />
+          <div className="mt-8 flex items-center justify-center gap-5">
+            <button
+              type="button"
+              onClick={() => scrollToSlide(Math.max(0, slide - 1))}
+              disabled={slide <= 0}
+              aria-label="Previous videos"
+              className={`
+                grid
+                h-12
+                w-12
+                shrink-0
+                place-items-center
+                rounded-full
+                border
+                border-[rgba(145,100,245,0.3)]
+                bg-[#15121B]
+                text-[#F7F5FA]
+                transition-colors
+                hover:border-[#B9A0FF]
+                disabled:cursor-not-allowed
+                disabled:opacity-30
+                ${FOCUS}
+              `}
+            >
+              <ChevronLeft size={21} />
+            </button>
 
             <div
-              className="flex min-h-3 items-center gap-2"
-              role="tablist"
-              aria-label={`${displayedConfig.label} video pagination`}
+              role="group"
+              aria-label="Portfolio pagination"
+              className="flex min-h-6 items-center justify-center"
             >
               {Array.from(
-                { length: snapCount },
-                (_, index) => (
-                  <button
-                    key={index}
-                    type="button"
-                    role="tab"
-                    aria-label={`Show video group ${
-                      index + 1
-                    }`}
-                    aria-selected={
-                      selectedIndex === index
-                    }
-                    onClick={() => scrollTo(index)}
-                    className={`
-                      rounded-full
-                      transition-all
-                      duration-300
-                      ease-[cubic-bezier(0.16,1,0.3,1)]
-                      ${FOCUS_RING}
+                { length: maxSlide + 1 },
+                (_, index) => {
+                  const selected = slide === index;
 
-                      ${
-                        selectedIndex === index
-                          ? `
-                            h-2.5 w-8
-                            ${BRAND_GRADIENT}
-                            shadow-[0_0_10px_rgba(192,132,252,0.45)]
-                          `
-                          : `
-                            h-2.5 w-2.5
-                            border border-violet-300/15
-                            bg-white/10
-                            hover:bg-violet-300/30
-                            hover:shadow-[0_0_8px_rgba(192,132,252,0.25)]
-                          `
+                  return (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => scrollToSlide(index)}
+                      aria-label={`Go to slide ${index + 1}`}
+                      aria-current={
+                        selected ? "true" : undefined
                       }
-                    `}
-                  />
-                )
+                      className={`
+                        group
+                        flex
+                        h-7
+                        items-center
+                        justify-center
+                        rounded-full
+                        px-1
+                        ${FOCUS}
+                      `}
+                    >
+                      <span
+                        className={`
+                          block
+                          h-2
+                          rounded-full
+                          transition-all
+                          duration-300
+                          ${
+                            selected
+                              ? "w-8 bg-[#9164F5]"
+                              : "w-2 bg-[rgba(170,165,181,0.4)] group-hover:bg-[#B9A0FF]"
+                          }
+                        `}
+                      />
+                    </button>
+                  );
+                }
               )}
             </div>
 
-            <CarouselButton
-              direction="next"
-              disabled={!canScrollNext}
-              onClick={scrollNext}
-            />
+            <button
+              type="button"
+              onClick={() =>
+                scrollToSlide(Math.min(maxSlide, slide + 1))
+              }
+              disabled={slide >= maxSlide}
+              aria-label="Next videos"
+              className={`
+                grid
+                h-12
+                w-12
+                shrink-0
+                place-items-center
+                rounded-full
+                border
+                border-[rgba(145,100,245,0.3)]
+                bg-[#15121B]
+                text-[#F7F5FA]
+                transition-colors
+                hover:border-[#B9A0FF]
+                disabled:cursor-not-allowed
+                disabled:opacity-30
+                ${FOCUS}
+              `}
+            >
+              <ChevronRight size={21} />
+            </button>
           </div>
-        </motion.div>
+        </div>
       </div>
+
+      {mounted &&
+        modal &&
+        createPortal(
+          <VideoLightbox
+            category={getCategory(modal.category)}
+            index={modal.index}
+            onClose={closeVideo}
+            onStep={stepVideo}
+          />,
+          document.body
+        )}
     </section>
   );
-};
-
-export default PortfolioSlider;
+}

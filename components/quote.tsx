@@ -1,8 +1,31 @@
 "use client";
 
-import { motion, type Variants, useReducedMotion } from "framer-motion";
-import type { PointerEvent, CSSProperties } from "react";
-import { ArrowRight, Check, Sparkles } from "lucide-react";
+import { useId, type CSSProperties, type MouseEvent } from "react";
+import { ArrowUpRight, Check } from "lucide-react";
+import { MotionConfig, motion } from "framer-motion";
+import { Manrope, Space_Grotesk } from "next/font/google";
+
+/* ------------------------------------------------------------------ */
+/* Fonts: identical configs to Hero and the other sections              */
+/* ------------------------------------------------------------------ */
+
+const display = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["700"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const body = Manrope({
+  subsets: ["latin"],
+  weight: ["500", "700"],
+  variable: "--font-body",
+  display: "swap",
+});
+
+/* ------------------------------------------------------------------ */
+/* Data                                                                */
+/* ------------------------------------------------------------------ */
 
 type Plan = {
   name: string;
@@ -15,12 +38,14 @@ type Plan = {
   featured?: boolean;
 };
 
-/**
- * Framer Motion accepts cubic-bezier easing as a 4-number tuple.
- * Keeping this explicitly typed prevents TypeScript from widening it
- * to number[].
- */
-const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+type SupportOffer = {
+  eyebrow: string;
+  title: string;
+  body: string;
+  cta: string;
+};
+
+const BOOKING_URL = "https://cal.com/aakash-creative-studio/30min";
 
 const mainPlans: Plan[] = [
   {
@@ -66,504 +91,317 @@ const mainPlans: Plan[] = [
   },
 ];
 
-const fadeUp: Variants = {
-  hidden: {
-    opacity: 0,
-    y: 28,
-    filter: "blur(10px)",
+const supportOffers: SupportOffer[] = [
+  {
+    eyebrow: "$100",
+    title: "Pilot Project",
+    body: "Not sure if we're a fit? Test the partnership with one ad creative before committing to a full package.",
+    cta: "Get Your First Creative",
   },
-  show: {
-    opacity: 1,
-    y: 0,
-    filter: "blur(0px)",
-    transition: {
-      duration: 1,
-      ease: EASE,
-    },
+  {
+    eyebrow: "Tailored scope",
+    title: "Custom Package",
+    body: "Running a bigger catalog or testing at higher volume? Book a call and I'll build a package around your specific creative needs.",
+    cta: "Book a Call",
   },
+];
+
+/* ------------------------------------------------------------------ */
+/* Design tokens (solid colors only, same palette as the Hero)         */
+/*   Background #08070B   Surface #15121B   Recess #100D15             */
+/*   Violet #9164F5   Deep violet #7A4AE6   Lavender #B9A0FF           */
+/*   Text #F7F5FA   Secondary #AAA5B5                                  */
+/* ------------------------------------------------------------------ */
+
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+const BORDER = "border-[rgba(145,100,245,0.18)]";
+
+const FOCUS =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[#9164F5]";
+
+const BTN =
+  "group inline-flex items-center justify-center gap-2 rounded-xl font-bold tracking-[-0.01em] transition-[background-color,border-color,color,transform,box-shadow] duration-300 motion-reduce:transition-none";
+
+const PRIMARY = `${BTN} bg-[#9164F5] text-[#08070B] shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_2px_0_#5B36BD,0_10px_20px_-10px_rgba(0,0,0,0.9)] hover:-translate-y-px hover:bg-[#7A4AE6] hover:text-[#F7F5FA] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_3px_0_#4B2AA3,0_14px_24px_-10px_rgba(0,0,0,0.95)] active:translate-y-0 motion-reduce:hover:translate-y-0 ${FOCUS}`;
+
+const SECONDARY = `${BTN} border border-[rgba(145,100,245,0.42)] bg-[#100D15] text-[#F7F5FA] shadow-[inset_0_1px_0_rgba(247,245,250,0.05),0_10px_20px_-12px_rgba(0,0,0,0.9)] hover:-translate-y-px hover:border-[rgba(185,160,255,0.7)] hover:bg-[#15121B] active:translate-y-0 motion-reduce:hover:translate-y-0 ${FOCUS}`;
+
+const ARROW =
+  "transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0 motion-reduce:group-hover:translate-y-0";
+
+const CARD_SHADOW: CSSProperties = {
+  boxShadow: [
+    "inset 0 1px 0 rgba(247,245,250,0.06)",
+    "inset 0 -1px 0 rgba(0,0,0,0.5)",
+    "0 1px 2px rgba(0,0,0,0.6)",
+    "0 18px 36px -18px rgba(0,0,0,0.85)",
+  ].join(", "),
 };
 
-const stagger: Variants = {
-  hidden: {},
-  show: {
-    transition: {
-      staggerChildren: 0.12,
-      delayChildren: 0.08,
-    },
-  },
-};
+/*
+ * HYDRATION SAFETY
+ * Nothing rendered here depends on the visitor's "reduce motion" setting or
+ * any browser-only value. Entrance props are always identical, and
+ * <MotionConfig reducedMotion="user"> only changes how they play. Plain CSS
+ * differences use Tailwind motion-reduce: variants. matchMedia is read only
+ * inside the click handler.
+ */
+const reveal = (delay = 0, y = 18) => ({
+  initial: { opacity: 0, y },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-60px" },
+  transition: { duration: 0.7, ease: EASE, delay },
+});
 
-const featureItem: Variants = {
-  hidden: {
-    opacity: 0,
-    x: -10,
-  },
-  show: {
-    opacity: 1,
-    x: 0,
-    transition: {
-      duration: 0.62,
-      ease: EASE,
-    },
-  },
-};
+type BookHandler = (event: MouseEvent<HTMLAnchorElement>) => void;
 
-export default function Pricing() {
-  const reduceMotion = useReducedMotion();
-
-  return (
-    <section
-      id="pricing"
-      aria-labelledby="pricing-heading"
-      className="relative isolate overflow-hidden bg-[#030303] py-24 text-white sm:py-32 lg:py-40"
-      style={{
-        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
-      }}
-    >
-      {/* Background */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 overflow-hidden"
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(80%_45%_at_50%_4%,rgba(125,92,255,0.11),transparent_68%)]" />
-
-        <div className="absolute inset-x-0 top-[38%] h-px bg-gradient-to-r from-transparent via-violet-300/[0.10] to-transparent" />
-
-        <motion.div
-          animate={
-            reduceMotion
-              ? undefined
-              : {
-                  x: [0, 42, -18, 0],
-                  y: [0, -26, 16, 0],
-                }
-          }
-          transition={{
-            duration: 30,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className="absolute -left-56 top-[28%] h-[38rem] w-[38rem] rounded-full bg-violet-700/[0.10] blur-[150px]"
-        />
-
-        <motion.div
-          animate={
-            reduceMotion
-              ? undefined
-              : {
-                  x: [0, -34, 22, 0],
-                  y: [0, 30, -20, 0],
-                }
-          }
-          transition={{
-            duration: 36,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className="absolute -right-64 top-[16%] h-[42rem] w-[42rem] rounded-full bg-indigo-600/[0.09] blur-[170px]"
-        />
-
-        <div
-          className="absolute inset-0 opacity-[0.035] mix-blend-screen"
-          style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='noise'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23noise)' opacity='.55'/></svg>\")",
-          }}
-        />
-      </div>
-
-      {/* Main content */}
-      <div className="relative mx-auto max-w-7xl px-5 sm:px-8 lg:px-10">
-        {/* Header */}
-        <motion.header
-          initial="hidden"
-          whileInView="show"
-          viewport={{
-            once: true,
-            amount: 0.45,
-          }}
-          variants={stagger}
-          className="mx-auto max-w-3xl text-center"
-        >
-          <motion.div
-            variants={fadeUp}
-            className="inline-flex items-center gap-2 rounded-full border border-violet-300/[0.16] bg-violet-300/[0.045] px-3.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-violet-100/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
-          >
-            <Sparkles
-              className="h-3.5 w-3.5 text-violet-300"
-              strokeWidth={1.8}
-            />
-
-            Pricing / Creative Partnership
-          </motion.div>
-
-          <motion.h2
-            id="pricing-heading"
-            variants={fadeUp}
-            className="mt-6 text-balance text-4xl font-semibold leading-[1.04] tracking-[-0.05em] text-white sm:text-5xl lg:text-6xl"
-            style={{
-              fontFamily: "Sora, Inter, sans-serif",
-            }}
-          >
-            Creative production built around{" "}
-            <span className="bg-gradient-to-r from-violet-100 via-violet-300 to-indigo-300 bg-clip-text text-transparent">
-              your growth.
-            </span>
-          </motion.h2>
-
-          <motion.p
-            variants={fadeUp}
-            className="mx-auto mt-6 max-w-2xl text-pretty text-base leading-relaxed text-white/58 sm:text-lg"
-          >
-            Choose a focused creative package or start with a single pilot
-            project. Every option is designed to make ongoing creative
-            production simpler.
-          </motion.p>
-        </motion.header>
-
-        {/* Main pricing plans */}
-        <motion.div
-          initial="hidden"
-          whileInView="show"
-          viewport={{
-            once: true,
-            amount: 0.14,
-          }}
-          variants={stagger}
-          className="mx-auto mt-16 grid max-w-6xl gap-6 lg:mt-20 lg:grid-cols-2 lg:gap-8"
-        >
-          {mainPlans.map((plan) => (
-            <PlanCard
-              key={plan.name}
-              plan={plan}
-              reduceMotion={Boolean(reduceMotion)}
-            />
-          ))}
-        </motion.div>
-
-        {/* Supporting offers */}
-        <motion.div
-          initial="hidden"
-          whileInView="show"
-          viewport={{
-            once: true,
-            amount: 0.18,
-          }}
-          variants={stagger}
-          className="mx-auto mt-6 grid max-w-6xl gap-6 md:grid-cols-2 lg:mt-8 lg:gap-8"
-        >
-          <SupportCard
-            eyebrow="$100"
-            title="Pilot Project"
-            body="Not sure if we're a fit? Test the partnership with one ad creative before committing to a full package."
-            cta="Get Your First Creative"
-            reduceMotion={Boolean(reduceMotion)}
-          />
-
-          <SupportCard
-            eyebrow="Tailored scope"
-            title="Custom Package"
-            body="Running a bigger catalog or testing at higher volume? Book a call and I'll build a package around your specific creative needs."
-            cta="Book a Call"
-            reduceMotion={Boolean(reduceMotion)}
-          />
-        </motion.div>
-      </div>
-    </section>
-  );
-}
+/* ------------------------------------------------------------------ */
+/* Plan card                                                           */
+/* ------------------------------------------------------------------ */
 
 function PlanCard({
   plan,
-  reduceMotion,
+  index,
+  onBook,
 }: {
   plan: Plan;
-  reduceMotion: boolean;
+  index: number;
+  onBook: BookHandler;
 }) {
-  const handlePointerMove = (
-    event: PointerEvent<HTMLDivElement>
-  ): void => {
-    if (reduceMotion || event.pointerType === "touch") {
-      return;
-    }
-
-    const element = event.currentTarget;
-    const rect = element.getBoundingClientRect();
-
-    if (rect.width === 0 || rect.height === 0) {
-      return;
-    }
-
-    const x = ((event.clientX - rect.left) / rect.width) * 100;
-    const y = ((event.clientY - rect.top) / rect.height) * 100;
-
-    element.style.setProperty("--pointer-x", `${x}%`);
-    element.style.setProperty("--pointer-y", `${y}%`);
-    element.style.setProperty("--pointer-opacity", "1");
-  };
-
-  const handlePointerLeave = (
-    event: PointerEvent<HTMLDivElement>
-  ): void => {
-    event.currentTarget.style.setProperty(
-      "--pointer-opacity",
-      "0"
-    );
-  };
-
-  const cardStyle = {
-    "--pointer-x": "50%",
-    "--pointer-y": "25%",
-    "--pointer-opacity": 0,
-  } as CSSProperties;
+  const featured = Boolean(plan.featured);
 
   return (
     <motion.article
-      variants={fadeUp}
-      whileHover={
-        reduceMotion
-          ? undefined
-          : {
-              y: -8,
-              scale: plan.featured ? 1.012 : 1.008,
-              transition: {
-                duration: 0.55,
-                ease: EASE,
-              },
-            }
-      }
-      onPointerMove={handlePointerMove}
-      onPointerLeave={handlePointerLeave}
-      className={`group relative min-w-0 rounded-[1.75rem] ${
-        plan.featured ? "lg:-mt-3 lg:mb-[-0.75rem]" : ""
-      }`}
-      style={cardStyle}
+      {...reveal(index * 0.1, 22)}
+      style={CARD_SHADOW}
+      className={`
+        relative flex h-full min-w-0 flex-col overflow-hidden
+        rounded-[28px] border bg-[#15121B] p-6 sm:p-8 lg:p-9
+        ${featured ? "border-[rgba(145,100,245,0.55)]" : BORDER}
+      `}
     >
-      {plan.featured && (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -inset-5 -z-10 rounded-[2.25rem] bg-[radial-gradient(58%_55%_at_50%_0%,rgba(132,92,246,0.24),transparent_72%)] blur-2xl"
-        />
-      )}
-
-      <div
-        className={`relative flex h-full flex-col overflow-hidden rounded-[1.75rem] border p-7 shadow-[0_30px_80px_-36px_rgba(0,0,0,0.95)] sm:p-9 lg:p-10 ${
-          plan.featured
-            ? "border-violet-300/[0.30] bg-[linear-gradient(145deg,rgba(119,79,214,0.18),rgba(16,14,27,0.78)_33%,rgba(255,255,255,0.035)_100%)] shadow-[0_38px_100px_-40px_rgba(104,65,220,0.42)]"
-            : "border-white/[0.09] bg-[linear-gradient(145deg,rgba(255,255,255,0.065),rgba(255,255,255,0.02)_42%,rgba(12,10,20,0.40)_100%)]"
-        }`}
-      >
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -inset-px opacity-0 transition-opacity duration-700 group-hover:opacity-100"
-          style={{
-            background:
-              "radial-gradient(340px circle at var(--pointer-x) var(--pointer-y), rgba(192,176,255,0.13), transparent 62%)",
-            opacity: "var(--pointer-opacity)",
-          }}
-        />
-
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.22] to-transparent"
-        />
-
-        {plan.featured && (
-          <div className="relative z-10 mb-8 flex items-center">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-violet-200/[0.25] bg-violet-200/[0.10] px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-violet-100 shadow-[0_8px_24px_-12px_rgba(167,139,250,0.75)]">
-              <Sparkles
-                className="h-3 w-3 text-violet-200"
-                strokeWidth={2}
-              />
-              Most Popular
-            </div>
-          </div>
+      {/* Name + badge */}
+      <div className="flex min-h-[28px] items-center justify-between gap-3">
+        <p className="text-[12px] font-bold uppercase leading-none tracking-[0.24em] text-[#B9A0FF]">
+          {plan.name}
+        </p>
+        {featured && (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#9164F5] px-3 py-1.5 text-[10px] font-bold uppercase leading-none tracking-[0.16em] text-[#08070B]">
+            Most Popular
+          </span>
         )}
-
-        <div
-          className={`relative z-10 ${
-            plan.featured ? "" : "pt-1"
-          }`}
-        >
-          <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-violet-200/80">
-            {plan.name}
-          </p>
-
-          <p className="mt-3 max-w-sm text-sm leading-relaxed text-white/58">
-            {plan.description}
-          </p>
-
-          <div className="mt-8 flex items-end gap-2">
-            <span
-              className="text-5xl font-semibold leading-none tracking-[-0.07em] text-white sm:text-6xl"
-              style={{
-                fontFamily: "Sora, Inter, sans-serif",
-              }}
-            >
-              {plan.price}
-            </span>
-          </div>
-
-          <div className="mt-5 flex items-center gap-3">
-            <span
-              className="text-3xl font-semibold leading-none tracking-[-0.05em] text-violet-200"
-              style={{
-                fontFamily: "Sora, Inter, sans-serif",
-              }}
-            >
-              {plan.creativeCount}
-            </span>
-
-            <div className="h-7 w-px bg-violet-200/20" />
-
-            <span className="text-sm font-medium text-white/70">
-              {plan.supportLine}
-            </span>
-          </div>
-        </div>
-
-        <div className="relative z-10 my-8 h-px bg-gradient-to-r from-transparent via-violet-200/[0.22] to-transparent" />
-
-        <motion.ul
-          variants={stagger}
-          className="relative z-10 space-y-3.5"
-          aria-label={`${plan.name} plan features`}
-        >
-          {plan.features.map((feature, index) => (
-            <motion.li
-              key={`${plan.name}-${feature}`}
-              variants={featureItem}
-              className="flex items-start gap-3"
-            >
-              <span
-                className={`mt-0.5 flex h-[19px] w-[19px] flex-none items-center justify-center rounded-full border ${
-                  plan.featured && index < 4
-                    ? "border-violet-200/[0.38] bg-violet-300/[0.17] text-violet-100"
-                    : "border-violet-200/[0.18] bg-violet-300/[0.07] text-violet-200/90"
-                }`}
-              >
-                <Check
-                  className="h-3 w-3"
-                  strokeWidth={2.5}
-                />
-              </span>
-
-              <span className="text-[14px] leading-relaxed text-white/76 sm:text-[15px]">
-                {feature}
-              </span>
-            </motion.li>
-          ))}
-        </motion.ul>
-
-        <div className="relative z-10 mt-auto pt-9">
-          <CTAButton
-            label={plan.cta}
-            featured={plan.featured}
-          />
-        </div>
       </div>
-    </motion.article>
-  );
-}
 
-function SupportCard({
-  eyebrow,
-  title,
-  body,
-  cta,
-  reduceMotion,
-}: {
-  eyebrow: string;
-  title: string;
-  body: string;
-  cta: string;
-  reduceMotion: boolean;
-}) {
-  return (
-    <motion.article
-      variants={fadeUp}
-      whileHover={
-        reduceMotion
-          ? undefined
-          : {
-              y: -6,
-              transition: {
-                duration: 0.55,
-                ease: EASE,
-              },
-            }
-      }
-      className="group relative overflow-hidden rounded-[1.5rem] border border-white/[0.08] bg-[linear-gradient(145deg,rgba(255,255,255,0.055),rgba(255,255,255,0.018)_55%,rgba(80,55,150,0.055))] p-7 shadow-[0_28px_72px_-38px_rgba(0,0,0,0.9)] sm:p-9"
-    >
+      <p className="mt-3 max-w-sm text-[15px] font-medium leading-7 text-[#AAA5B5]">
+        {plan.description}
+      </p>
+
+      {/* Price */}
+      <p
+        className={`${display.className} mt-7 text-[3.25rem] font-bold leading-none tracking-[-0.05em] text-[#F7F5FA] sm:text-[4rem]`}
+      >
+        {plan.price}
+      </p>
+
+      <div className="mt-5 flex items-center gap-3">
+        <span
+          className={`${display.className} text-[1.85rem] font-bold leading-none tracking-[-0.04em] tabular-nums text-[#B9A0FF]`}
+        >
+          {plan.creativeCount}
+        </span>
+        <span
+          aria-hidden="true"
+          className="h-6 w-px bg-[rgba(145,100,245,0.3)]"
+        />
+        <span className="text-[15px] font-bold leading-none text-[#F7F5FA]">
+          {plan.supportLine}
+        </span>
+      </div>
+
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-white/[0.16] to-transparent"
+        className="my-7 h-px bg-[rgba(145,100,245,0.18)] sm:my-8"
       />
 
-      <div className="relative flex h-full flex-col">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-violet-200/75">
-          {eyebrow}
-        </p>
+      {/* Features */}
+      <ul
+        aria-label={`${plan.name} plan features`}
+        className="m-0 flex list-none flex-col gap-3.5 p-0"
+      >
+        {plan.features.map((feature) => (
+          <li key={`${plan.name}-${feature}`} className="flex items-start gap-3">
+            <span
+              aria-hidden="true"
+              className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full border ${
+                featured
+                  ? "border-[#9164F5] bg-[#9164F5] text-[#08070B]"
+                  : "border-[rgba(145,100,245,0.35)] bg-[#100D15] text-[#B9A0FF]"
+              }`}
+            >
+              <Check className="h-3 w-3" strokeWidth={3} />
+            </span>
+            <span className="text-[15px] font-medium leading-6 text-[#F7F5FA]">
+              {feature}
+            </span>
+          </li>
+        ))}
+      </ul>
 
-        <h3
-          className="mt-3 text-2xl font-semibold tracking-[-0.04em] text-white sm:text-3xl"
-          style={{
-            fontFamily: "Sora, Inter, sans-serif",
-          }}
+      {/* CTA */}
+      <div className="mt-auto pt-9">
+        <a
+          href={BOOKING_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onBook}
+          aria-label={`${plan.cta}: ${plan.name} plan`}
+          className={`${featured ? PRIMARY : SECONDARY} h-[54px] w-full px-6 text-[15px]`}
         >
-          {title}
-        </h3>
-
-        <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-white/58">
-          {body}
-        </p>
-
-        <div className="mt-8">
-          <CTAButton
-            label={cta}
-            compact
-          />
-        </div>
+          {plan.cta}
+          <ArrowUpRight size={18} aria-hidden="true" className={ARROW} />
+        </a>
       </div>
     </motion.article>
   );
 }
 
-function CTAButton({
-  label,
-  featured = false,
-  compact = false,
+/* ------------------------------------------------------------------ */
+/* Support card                                                        */
+/* ------------------------------------------------------------------ */
+
+function SupportCard({
+  offer,
+  index,
+  onBook,
 }: {
-  label: string;
-  featured?: boolean;
-  compact?: boolean;
+  offer: SupportOffer;
+  index: number;
+  onBook: BookHandler;
 }) {
-  const sizing = compact
-    ? "w-full sm:w-auto min-h-12 px-5 py-3"
-    : "min-h-14 w-full px-6 py-4";
+  return (
+    <motion.article
+      {...reveal(index * 0.1, 22)}
+      style={CARD_SHADOW}
+      className={`flex h-full min-w-0 flex-col rounded-[24px] border ${BORDER} bg-[#15121B] p-6 sm:p-8`}
+    >
+      <p className="text-[12px] font-bold uppercase leading-none tracking-[0.22em] text-[#B9A0FF]">
+        {offer.eyebrow}
+      </p>
+
+      <h3
+        className={`${display.className} mt-3 text-[1.6rem] font-bold leading-[1.1] tracking-[-0.04em] text-[#F7F5FA] sm:text-[1.9rem]`}
+      >
+        {offer.title}
+      </h3>
+
+      <p className="mt-4 max-w-lg text-[15px] font-medium leading-7 text-[#AAA5B5]">
+        {offer.body}
+      </p>
+
+      <div className="mt-auto pt-8">
+        <a
+          href={BOOKING_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onBook}
+          className={`${SECONDARY} h-[52px] w-full px-6 text-[15px] sm:w-auto`}
+        >
+          {offer.cta}
+          <ArrowUpRight size={18} aria-hidden="true" className={ARROW} />
+        </a>
+      </div>
+    </motion.article>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Section                                                             */
+/* ------------------------------------------------------------------ */
+
+export default function Pricing() {
+  const headingId = useId();
+
+  /* Scroll to #booking if that section exists, otherwise open the booking page.
+     The motion preference is read here, inside an event handler, never in render. */
+  const handleBook: BookHandler = (event) => {
+    const section = document.getElementById("booking");
+    if (!section) return;
+    event.preventDefault();
+    const prefersReduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    section.scrollIntoView({
+      behavior: prefersReduced ? "auto" : "smooth",
+      block: "start",
+    });
+  };
 
   return (
-    <motion.button
-      type="button"
-      whileHover={{
-        y: -2,
-      }}
-      whileTap={{
-        scale: 0.985,
-      }}
-      transition={{
-        duration: 0.45,
-        ease: EASE,
-      }}
-      className={`group/button inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold outline-none transition-[box-shadow,background-color,border-color] duration-500 focus-visible:ring-2 focus-visible:ring-violet-200 focus-visible:ring-offset-2 focus-visible:ring-offset-[#070708] ${sizing} ${
-        featured
-          ? "border border-violet-200/[0.38] bg-[linear-gradient(135deg,#9b7cff_0%,#6f55de_48%,#5740bd_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_14px_34px_-15px_rgba(126,87,255,0.70)] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.34),0_18px_42px_-14px_rgba(126,87,255,0.82)]"
-          : "border border-violet-200/[0.20] bg-white/[0.035] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] hover:border-violet-200/[0.40] hover:bg-violet-200/[0.09] hover:shadow-[0_14px_32px_-18px_rgba(139,92,246,0.48)]"
-      }`}
-    >
-      <span>{label}</span>
+    <MotionConfig reducedMotion="user">
+      <section
+        id="pricing"
+        aria-labelledby={headingId}
+        className={`${display.variable} ${body.variable} ${body.className} relative isolate overflow-hidden bg-[#08070B] py-20 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] text-[#F7F5FA] antialiased sm:px-8 sm:py-28`}
+      >
+        <div className="mx-auto max-w-6xl">
+          {/* Header */}
+          <header className="mx-auto max-w-3xl text-center">
+            <motion.p
+              {...reveal(0, 14)}
+              className={`mx-auto mb-5 inline-flex items-center gap-2.5 rounded-full border ${BORDER} bg-[#15121B] px-4 py-1.5 text-[11px] font-bold uppercase leading-none tracking-[0.24em] text-[#B9A0FF] sm:text-xs`}
+            >
+              <span
+                aria-hidden="true"
+                className="h-1.5 w-1.5 rounded-full bg-[#9164F5]"
+              />
+              Pricing
+            </motion.p>
 
-      <ArrowRight className="h-4 w-4 transition-transform duration-500 ease-out group-hover/button:translate-x-1" />
-    </motion.button>
+            <motion.h2
+              {...reveal(0.06)}
+              id={headingId}
+              className={`${display.className} text-[2.2rem] font-bold leading-[1.05] tracking-[-0.045em] text-[#F7F5FA] [text-wrap:balance] min-[400px]:text-[2.5rem] sm:text-5xl lg:text-[3.75rem]`}
+            >
+              Creative production built around{" "}
+              <span className="text-[#9164F5]">your growth.</span>
+            </motion.h2>
+
+            <motion.p
+              {...reveal(0.12)}
+              className="mx-auto mt-5 max-w-2xl text-[15px] font-medium leading-7 text-[#AAA5B5] sm:mt-6 sm:text-base"
+            >
+              Choose a focused creative package or start with a single pilot
+              project. Every option is designed to make ongoing creative
+              production simpler.
+            </motion.p>
+          </header>
+
+          {/* Main plans */}
+          <div className="mt-12 grid gap-4 sm:mt-16 sm:gap-6 lg:grid-cols-2 lg:gap-8">
+            {mainPlans.map((plan, index) => (
+              <PlanCard
+                key={plan.name}
+                plan={plan}
+                index={index}
+                onBook={handleBook}
+              />
+            ))}
+          </div>
+
+          {/* Supporting offers */}
+          <div className="mt-4 grid gap-4 sm:mt-6 sm:gap-6 md:grid-cols-2 lg:mt-8 lg:gap-8">
+            {supportOffers.map((offer, index) => (
+              <SupportCard
+                key={offer.title}
+                offer={offer}
+                index={index}
+                onBook={handleBook}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+    </MotionConfig>
   );
 }

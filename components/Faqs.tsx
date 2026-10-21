@@ -1,22 +1,48 @@
 "use client";
 
-import { memo, useCallback, useId, useState, type PointerEvent } from "react";
-import { Bebas_Neue } from "next/font/google";
-import { motion, useReducedMotion, type Variants } from "framer-motion";
+import {
+  memo,
+  useCallback,
+  useId,
+  useState,
+  type CSSProperties,
+  type MouseEvent,
+} from "react";
+import { ArrowUpRight, MessageCircle, Minus, Plus } from "lucide-react";
+import { MotionConfig, motion } from "framer-motion";
+import { Manrope, Space_Grotesk } from "next/font/google";
 
-const bebasNeue = Bebas_Neue({
+/* ------------------------------------------------------------------ */
+/* Fonts: identical configs to Hero and the other sections              */
+/* ------------------------------------------------------------------ */
+
+const display = Space_Grotesk({
   subsets: ["latin"],
-  weight: "400",
+  weight: ["700"],
+  variable: "--font-display",
+  display: "swap",
 });
+
+const body = Manrope({
+  subsets: ["latin"],
+  weight: ["500", "700"],
+  variable: "--font-body",
+  display: "swap",
+});
+
+/* ------------------------------------------------------------------ */
+/* Data (kept separate from presentation)                              */
+/* ------------------------------------------------------------------ */
 
 type FaqItem = {
   question: string;
   answer: string;
 };
 
-/* ------------------------------------------------------------------ */
-/* Data (kept separate from presentation)                              */
-/* ------------------------------------------------------------------ */
+const BOOKING_URL = "https://cal.com/aakash-creative-studio/30min";
+const WHATSAPP_URL =
+  "https://wa.me/923335673693?text=Hi%20I%20am%20interested%20in%20your%20services";
+
 const faqs: FaqItem[] = [
   {
     question: "What types of businesses do you work with?",
@@ -50,76 +76,58 @@ const faqs: FaqItem[] = [
   },
 ];
 
-const EASE = [0.16, 1, 0.3, 1] as const;
-
 /* ------------------------------------------------------------------ */
-/* Motion variants                                                     */
+/* Design tokens (solid colors only, same palette as the Hero)         */
+/*   Background #08070B   Surface #15121B   Recess #100D15             */
+/*   Violet #9164F5   Deep violet #7A4AE6   Lavender #B9A0FF           */
+/*   Text #F7F5FA   Secondary #AAA5B5                                  */
 /* ------------------------------------------------------------------ */
-const container: Variants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.1, delayChildren: 0.08 } },
-};
-const glow: Variants = {
-  hidden: { opacity: 0 },
-  show: { opacity: 1, transition: { duration: 1.2, ease: EASE } },
-};
-const rise: Variants = {
-  hidden: { opacity: 0, y: 18 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: EASE } },
-};
-const sharpen: Variants = {
-  hidden: { opacity: 0, y: 34, filter: "blur(10px)" },
-  show: {
-    opacity: 1,
-    y: 0,
-    filter: "blur(0px)",
-    transition: { duration: 0.9, ease: EASE },
-  },
-};
-const cardIn: Variants = {
-  hidden: { opacity: 0, y: 26 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.75, ease: EASE } },
-};
-const numberIn: Variants = {
-  hidden: { opacity: 0.15, scale: 0.94 },
-  show: (i: number) => ({
-    opacity: 1,
-    scale: 1,
-    transition: { duration: 0.6, ease: EASE, delay: 0.55 + i * 0.09 },
-  }),
+
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+const BORDER = "border-[rgba(145,100,245,0.18)]";
+
+const FOCUS =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[#9164F5]";
+
+const BTN =
+  "group inline-flex items-center justify-center gap-2 rounded-xl font-bold tracking-[-0.01em] transition-[background-color,border-color,color,transform,box-shadow] duration-300 motion-reduce:transition-none";
+
+const PRIMARY = `${BTN} bg-[#9164F5] text-[#08070B] shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_2px_0_#5B36BD,0_10px_20px_-10px_rgba(0,0,0,0.9)] hover:-translate-y-px hover:bg-[#7A4AE6] hover:text-[#F7F5FA] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_3px_0_#4B2AA3,0_14px_24px_-10px_rgba(0,0,0,0.95)] active:translate-y-0 motion-reduce:hover:translate-y-0 ${FOCUS}`;
+
+const SECONDARY = `${BTN} border border-[rgba(145,100,245,0.42)] bg-[#100D15] text-[#F7F5FA] shadow-[inset_0_1px_0_rgba(247,245,250,0.05),0_10px_20px_-12px_rgba(0,0,0,0.9)] hover:-translate-y-px hover:border-[rgba(185,160,255,0.7)] hover:bg-[#15121B] active:translate-y-0 motion-reduce:hover:translate-y-0 ${FOCUS}`;
+
+const ARROW =
+  "transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0 motion-reduce:group-hover:translate-y-0";
+
+const CARD_SHADOW: CSSProperties = {
+  boxShadow: [
+    "inset 0 1px 0 rgba(247,245,250,0.06)",
+    "inset 0 -1px 0 rgba(0,0,0,0.5)",
+    "0 1px 2px rgba(0,0,0,0.6)",
+    "0 18px 36px -18px rgba(0,0,0,0.85)",
+  ].join(", "),
 };
 
-/* ------------------------------------------------------------------ */
-/* Pointer handlers (write CSS variables directly: no re-renders)      */
-/* ------------------------------------------------------------------ */
-const MAX_TILT = 1; // degrees
-
-function handlePointerMove(event: PointerEvent<HTMLElement>) {
-  if (event.pointerType !== "mouse") return;
-
-  const card = event.currentTarget;
-  const bounds = card.getBoundingClientRect();
-  if (!bounds.width || !bounds.height) return;
-
-  const x = Math.min(Math.max(event.clientX - bounds.left, 0), bounds.width);
-  const y = Math.min(Math.max(event.clientY - bounds.top, 0), bounds.height);
-
-  card.style.setProperty("--faq-pointer-x", `${x}px`);
-  card.style.setProperty("--faq-pointer-y", `${y}px`);
-  card.style.setProperty("--faq-tilt-x", `${((0.5 - y / bounds.height) * MAX_TILT).toFixed(2)}deg`);
-  card.style.setProperty("--faq-tilt-y", `${((x / bounds.width - 0.5) * MAX_TILT).toFixed(2)}deg`);
-}
-
-function handlePointerLeave(event: PointerEvent<HTMLElement>) {
-  const card = event.currentTarget;
-  ["--faq-pointer-x", "--faq-pointer-y", "--faq-tilt-x", "--faq-tilt-y"].forEach((p) =>
-    card.style.removeProperty(p),
-  );
-}
+/*
+ * HYDRATION SAFETY
+ * Nothing rendered here depends on the visitor's "reduce motion" setting.
+ * Entrance props are always identical; <MotionConfig reducedMotion="user">
+ * changes only how Framer Motion plays them. The accordion's transitions are
+ * plain CSS classes with motion-reduce: overrides, so the markup is the same
+ * on the server and on the first client render.
+ */
+const reveal = (delay = 0) => ({
+  initial: { opacity: 0, y: 18 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-60px" },
+  transition: { duration: 0.7, ease: EASE, delay },
+});
 
 /* ------------------------------------------------------------------ */
 /* Card                                                                */
 /* ------------------------------------------------------------------ */
+
 type FaqCardProps = {
   faq: FaqItem;
   index: number;
@@ -128,55 +136,146 @@ type FaqCardProps = {
   onToggle: (index: number) => void;
 };
 
-const FaqCard = memo(function FaqCard({ faq, index, isOpen, baseId, onToggle }: FaqCardProps) {
-  const reduce = useReducedMotion();
+const FaqCard = memo(function FaqCard({
+  faq,
+  index,
+  isOpen,
+  baseId,
+  onToggle,
+}: FaqCardProps) {
   const triggerId = `${baseId}-trigger-${index}`;
   const answerId = `${baseId}-answer-${index}`;
-  const numberMotion = reduce ? {} : { variants: numberIn, custom: index };
+  const paragraphs = faq.answer
+    .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean);
 
   return (
     <article
-      className={`portfolio-faq-card ${isOpen ? "portfolio-faq-card--open" : ""}`}
-      onPointerMove={handlePointerMove}
-      onPointerLeave={handlePointerLeave}
+      style={CARD_SHADOW}
+      className={`
+        group/card relative overflow-hidden rounded-[22px] border bg-[#15121B]
+        transition-[border-color] duration-500
+        motion-reduce:transition-none
+        ${
+          isOpen
+            ? "border-[rgba(145,100,245,0.5)]"
+            : `${BORDER} [@media(hover:hover)]:hover:border-[rgba(185,160,255,0.4)]`
+        }
+      `}
     >
-      <span aria-hidden="true" className="portfolio-faq-strip" />
-      <span aria-hidden="true" className="portfolio-faq-rail" />
-
-      <h3 className="portfolio-faq-item-heading">
+      <h3 className="m-0">
         <button
           id={triggerId}
           type="button"
           aria-expanded={isOpen}
           aria-controls={answerId}
           onClick={() => onToggle(index)}
-          className="portfolio-faq-trigger"
+          className={`
+            grid min-h-[4.75rem] w-full grid-cols-[auto_minmax(0,1fr)_auto]
+            items-center gap-3.5 px-4 py-3.5 text-left
+            [-webkit-tap-highlight-color:transparent]
+            sm:min-h-[5.5rem] sm:gap-4 sm:px-5 sm:py-4
+            lg:min-h-[6rem] lg:gap-5 lg:px-6
+            focus-visible:outline focus-visible:outline-2
+            focus-visible:outline-offset-[-3px] focus-visible:outline-[#9164F5]
+          `}
         >
-          <motion.span aria-hidden="true" className="portfolio-faq-index-wrap" {...numberMotion}>
-            <span className={`${bebasNeue.className} portfolio-faq-index`}>
-              <span className="portfolio-faq-index-text">{String(index + 1).padStart(2, "0")}</span>
-            </span>
-          </motion.span>
+          {/* Number */}
+          <span
+            aria-hidden="true"
+            className={`
+              ${display.className}
+              grid h-10 w-10 shrink-0 place-items-center rounded-xl border
+              text-[15px] font-bold leading-none tracking-[-0.02em] tabular-nums
+              transition-[background-color,border-color,color] duration-300
+              motion-reduce:transition-none
+              sm:h-11 sm:w-11 sm:text-base
+              ${
+                isOpen
+                  ? "border-[#9164F5] bg-[#9164F5] text-[#08070B]"
+                  : "border-[rgba(145,100,245,0.28)] bg-[#100D15] text-[#B9A0FF]"
+              }
+            `}
+          >
+            {String(index + 1).padStart(2, "0")}
+          </span>
 
-          <span className="portfolio-faq-question">{faq.question}</span>
+          {/* Question */}
+          <span
+            className={`${display.className} min-w-0 text-[clamp(1.0625rem,0.95rem+0.55vw,1.4rem)] font-bold leading-[1.25] tracking-[-0.025em] text-[#F7F5FA] [text-wrap:balance]`}
+          >
+            {faq.question}
+          </span>
 
-          <span aria-hidden="true" className="portfolio-faq-icon">
-            <span className="portfolio-faq-icon__line" />
-            <span className="portfolio-faq-icon__line portfolio-faq-icon__line--vertical" />
+          {/* Icon */}
+          <span
+            aria-hidden="true"
+            className={`
+              grid h-10 w-10 shrink-0 place-items-center rounded-full border
+              transition-[background-color,border-color,color] duration-300
+              motion-reduce:transition-none
+              sm:h-11 sm:w-11
+              ${
+                isOpen
+                  ? "border-[#9164F5] bg-[#9164F5] text-[#08070B]"
+                  : "border-[rgba(145,100,245,0.3)] bg-[#100D15] text-[#F7F5FA] [@media(hover:hover)]:group-hover/card:border-[rgba(185,160,255,0.7)]"
+              }
+            `}
+          >
+            {isOpen ? (
+              <Minus className="h-[18px] w-[18px]" strokeWidth={2.25} />
+            ) : (
+              <Plus className="h-[18px] w-[18px]" strokeWidth={2.25} />
+            )}
           </span>
         </button>
       </h3>
 
+      {/* Answer: grid-rows expansion, hidden from assistive tech when closed.
+          Durations are CSS only, so reduced motion never changes the markup. */}
       <div
         id={answerId}
         role="region"
         aria-labelledby={triggerId}
-        className={`portfolio-faq-answer ${isOpen ? "portfolio-faq-answer--open" : ""}`}
+        className={`
+          grid
+          [transition-property:grid-template-rows,visibility]
+          [transition-timing-function:cubic-bezier(0.22,1,0.36,1),linear]
+          motion-reduce:[transition-delay:0s,0s]
+          motion-reduce:[transition-duration:0s,0s]
+          ${
+            isOpen
+              ? "visible grid-rows-[1fr] [transition-delay:0s,0s] [transition-duration:600ms,0s]"
+              : "invisible grid-rows-[0fr] [transition-delay:0s,600ms] [transition-duration:600ms,0s]"
+          }
+        `}
       >
-        <div className="portfolio-faq-answer-clip">
-          <div className="portfolio-faq-answer-content">
-            {faq.answer.split(/\n\s*\n/).map((paragraph, i) => (
-              <p key={i}>{paragraph}</p>
+        <div className="min-h-0 overflow-hidden">
+          <div
+            className={`
+              mx-4 border-t ${BORDER} pb-5 pt-4
+              transition-[opacity,transform] duration-[400ms]
+              ease-[cubic-bezier(0.22,1,0.36,1)]
+              motion-reduce:transition-none
+              sm:mx-5 sm:pb-6 sm:pl-[3.75rem] sm:pr-2
+              lg:mx-6 lg:pb-7 lg:pl-[4.25rem]
+              ${
+                isOpen
+                  ? "translate-y-0 opacity-100 delay-[120ms]"
+                  : "translate-y-2 opacity-0 delay-0"
+              }
+            `}
+          >
+            {paragraphs.map((paragraph, i) => (
+              <p
+                key={i}
+                className={`max-w-[62ch] text-[15px] font-medium leading-7 text-[#AAA5B5] sm:text-base ${
+                  i > 0 ? "mt-4" : ""
+                }`}
+              >
+                {paragraph}
+              </p>
             ))}
           </div>
         </div>
@@ -188,530 +287,138 @@ const FaqCard = memo(function FaqCard({ faq, index, isOpen, baseId, onToggle }: 
 /* ------------------------------------------------------------------ */
 /* Section                                                             */
 /* ------------------------------------------------------------------ */
+
 export default function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const instanceId = useId();
-  const reduce = useReducedMotion();
 
   const toggle = useCallback(
-    (index: number) => setOpenIndex((current) => (current === index ? null : index)),
-    [],
+    (index: number) =>
+      setOpenIndex((current) => (current === index ? null : index)),
+    []
   );
 
-  // With reduced motion, skip the choreography entirely (content stays visible)
-  const v = (variants: Variants): Variants | undefined => (reduce ? undefined : variants);
+  /* Scroll to #booking if that section exists, otherwise open the booking page.
+     The motion preference is read here, inside an event handler, never in render. */
+  const handleBook = (event: MouseEvent<HTMLAnchorElement>) => {
+    const section = document.getElementById("booking");
+    if (!section) return;
+    event.preventDefault();
+    const prefersReduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    section.scrollIntoView({
+      behavior: prefersReduced ? "auto" : "smooth",
+      block: "start",
+    });
+  };
 
   return (
-    <section
-      id="faq"
-      aria-labelledby={`${instanceId}-heading`}
-      className="portfolio-faq relative isolate overflow-hidden bg-[#030207] px-4 py-20 sm:px-6 sm:py-24 lg:px-8 lg:py-32"
-    >
-      <motion.div
-        className="relative z-10 mx-auto w-full max-w-[1180px]"
-        variants={v(container)}
-        initial={reduce ? undefined : "hidden"}
-        whileInView={reduce ? undefined : "show"}
-        viewport={{ once: true, amount: 0.12 }}
+    <MotionConfig reducedMotion="user">
+      <section
+        id="faq"
+        aria-labelledby={`${instanceId}-heading`}
+        className={`${display.variable} ${body.variable} ${body.className} relative isolate overflow-hidden bg-[#08070B] py-20 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] text-[#F7F5FA] antialiased sm:px-8 sm:py-28`}
       >
-        {/* Atmosphere */}
-        <motion.div aria-hidden="true" variants={v(glow)} className="portfolio-faq-atmosphere">
-          <div className="portfolio-faq-ambient portfolio-faq-ambient--top" />
-          <div className="portfolio-faq-ambient portfolio-faq-ambient--side" />
-          <div className="portfolio-faq-ambient portfolio-faq-ambient--bottom" />
-        </motion.div>
+        <div className="mx-auto grid max-w-[1180px] gap-10 lg:grid-cols-[5fr_7fr] lg:gap-x-16 lg:gap-y-10">
+          {/* Intro */}
+          <header className="lg:col-start-1 lg:row-start-1">
+            <motion.p
+              {...reveal(0)}
+              className={`mb-5 inline-flex items-center gap-2.5 rounded-full border ${BORDER} bg-[#15121B] px-4 py-1.5 text-[11px] font-bold uppercase leading-none tracking-[0.24em] text-[#B9A0FF] sm:text-xs`}
+            >
+              <span
+                aria-hidden="true"
+                className="h-1.5 w-1.5 rounded-full bg-[#9164F5]"
+              />
+              FAQ
+            </motion.p>
 
-        {/* Intro */}
-        <header className="mb-10 sm:mb-14 lg:mb-16">
-          <motion.div
-            variants={v(rise)}
-            className="mb-5 flex items-center gap-3 text-[0.68rem] font-semibold uppercase tracking-[0.26em] text-violet-200/70"
-          >
-            <span aria-hidden="true" className="portfolio-faq-eyebrow-dot" />
-            <span>FAQ</span>
-            <span aria-hidden="true" className="h-px w-8 bg-gradient-to-r from-violet-400 to-fuchsia-400/0" />
-            <span>Common questions</span>
-          </motion.div>
-
-          <motion.h2
-            id={`${instanceId}-heading`}
-            variants={v(sharpen)}
-            className="leading-none"
-          >
-            <span
-              className={`${bebasNeue.className} block text-[3.6rem] leading-[0.86] tracking-wide text-white sm:text-7xl md:text-8xl lg:text-[7rem]`}
+            <motion.h2
+              {...reveal(0.06)}
+              id={`${instanceId}-heading`}
+              className={`${display.className} text-[2.4rem] font-bold leading-[1.05] tracking-[-0.045em] text-[#F7F5FA] [text-wrap:balance] sm:text-5xl lg:text-[3.5rem]`}
             >
               Questions?
-            </span>
-            <span className="portfolio-faq-gradient-text mt-3 block pb-1 text-[2.1rem] font-bold tracking-[-0.04em] sm:mt-4 sm:text-5xl md:text-6xl">
-              I&apos;ve got answers.
-            </span>
-          </motion.h2>
+              <span className="block text-[#9164F5]">I&apos;ve got answers.</span>
+            </motion.h2>
 
-          <motion.p
-            variants={v(rise)}
-            className="mt-6 max-w-2xl text-pretty text-[0.95rem] leading-relaxed text-violet-100/60 sm:text-base lg:text-lg"
+            <motion.p
+              {...reveal(0.12)}
+              className="mt-5 max-w-lg text-[15px] font-medium leading-7 text-[#AAA5B5] sm:mt-6 sm:text-base"
+            >
+              A quick read on my services, workflow, turnaround, creative
+              strategy, ongoing collaboration, and the platforms I edit for, so
+              you know what working together looks like.
+            </motion.p>
+          </header>
+
+          {/* Accordion */}
+          <div
+            role="list"
+            aria-label="Frequently asked questions"
+            className="flex flex-col gap-3 sm:gap-4 lg:col-start-2 lg:row-span-2 lg:row-start-1"
           >
-            A quick read on my services, workflow, turnaround, creative strategy, ongoing collaboration,
-            and the platforms I edit for, so you know what working together looks like.
-          </motion.p>
-        </header>
+            {faqs.map((faq, index) => (
+              <motion.div
+                role="listitem"
+                key={faq.question}
+                {...reveal(Math.min(index, 4) * 0.07)}
+              >
+                <FaqCard
+                  faq={faq}
+                  index={index}
+                  isOpen={openIndex === index}
+                  baseId={instanceId}
+                  onToggle={toggle}
+                />
+              </motion.div>
+            ))}
+          </div>
 
-        {/* Accordion */}
-        <div className="space-y-3 sm:space-y-4">
-          {faqs.map((faq, index) => (
-            <motion.div key={faq.question} variants={v(cardIn)} className="portfolio-faq-perspective">
-              <FaqCard
-                faq={faq}
-                index={index}
-                isOpen={openIndex === index}
-                baseId={instanceId}
-                onToggle={toggle}
-              />
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Closing CTA */}
-        <motion.div variants={v(rise)} className="portfolio-faq-cta">
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-violet-200/70">Still have questions?</p>
-            <p className="mt-1 text-balance text-2xl font-bold tracking-[-0.03em] text-white sm:text-3xl">
+          {/* Closing CTA */}
+          <motion.div
+            {...reveal(0.1)}
+            style={CARD_SHADOW}
+            className={`rounded-[24px] border ${BORDER} bg-[#15121B] p-6 sm:p-8 lg:col-start-1 lg:row-start-2 lg:self-start`}
+          >
+            <p className="text-[13px] font-bold leading-none text-[#B9A0FF]">
+              Still have questions?
+            </p>
+            <p
+              className={`${display.className} mt-3 text-[1.5rem] font-bold leading-[1.1] tracking-[-0.04em] text-[#F7F5FA] [text-wrap:balance] sm:text-[1.75rem]`}
+            >
               Let&apos;s talk about your next creative.
             </p>
-          </div>
-          <a href="#booking" className="portfolio-faq-cta-button">
-            Book a Creative Call <span aria-hidden="true">→</span>
-          </a>
-        </motion.div>
-      </motion.div>
 
-      <style jsx global>{`
-        .portfolio-faq {
-          --faq-violet: #8b5cf6;
-          --faq-purple: #a855f7;
-          --faq-fuchsia: #d946ef;
-          --faq-lavender: #c4b5fd;
-          --faq-ease: cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        /* ---------- Background ---------- */
-        .portfolio-faq::before {
-          position: absolute;
-          inset: 0;
-          z-index: 0;
-          content: "";
-          pointer-events: none;
-          opacity: 0.4;
-          background-image:
-            linear-gradient(rgba(196, 181, 253, 0.04) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(196, 181, 253, 0.04) 1px, transparent 1px);
-          background-size: 48px 48px;
-          -webkit-mask-image: radial-gradient(circle at 50% 40%, black, transparent 75%);
-          mask-image: radial-gradient(circle at 50% 40%, black, transparent 75%);
-        }
-        .portfolio-faq-atmosphere {
-          position: absolute;
-          inset: -12rem -50vw;
-          z-index: -1;
-          pointer-events: none;
-        }
-        .portfolio-faq-ambient {
-          position: absolute;
-          border-radius: 9999px;
-        }
-        .portfolio-faq-ambient--top {
-          top: 0;
-          left: 50%;
-          width: 52rem;
-          height: 36rem;
-          transform: translateX(-50%);
-          background: radial-gradient(closest-side, rgba(139, 92, 246, 0.22), transparent);
-        }
-        .portfolio-faq-ambient--side {
-          top: 38%;
-          left: 50%;
-          width: 30rem;
-          height: 30rem;
-          margin-left: -36rem;
-          background: radial-gradient(closest-side, rgba(217, 70, 239, 0.1), transparent);
-          animation: portfolio-faq-drift 22s ease-in-out infinite alternate;
-        }
-        .portfolio-faq-ambient--bottom {
-          bottom: 0;
-          left: 50%;
-          width: 36rem;
-          height: 30rem;
-          margin-left: 6rem;
-          background: radial-gradient(closest-side, rgba(124, 58, 237, 0.16), transparent);
-        }
-        @keyframes portfolio-faq-drift {
-          from { transform: translate3d(0, 0, 0); }
-          to { transform: translate3d(12rem, 3rem, 0); }
-        }
-        .portfolio-faq-eyebrow-dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 9999px;
-          background: var(--faq-fuchsia);
-          box-shadow: 0 0 10px rgba(232, 121, 249, 0.9);
-        }
-        .portfolio-faq-gradient-text {
-          background: linear-gradient(95deg, #a78bfa 0%, #c084fc 45%, #e879f9 100%);
-          -webkit-background-clip: text;
-          background-clip: text;
-          color: transparent;
-        }
-
-        /* ---------- Card ---------- */
-        .portfolio-faq-perspective { perspective: 1200px; }
-
-        .portfolio-faq-card {
-          position: relative;
-          isolation: isolate;
-          overflow: hidden;
-          border: 1px solid rgba(196, 181, 253, 0.12);
-          border-radius: 1.4rem;
-          background: linear-gradient(130deg, rgba(139, 92, 246, 0.07) 0%, rgba(14, 9, 24, 0.94) 40%, rgba(4, 2, 9, 0.98) 100%);
-          box-shadow:
-            0 18px 40px -16px rgba(0, 0, 0, 0.7),
-            0 2px 8px rgba(0, 0, 0, 0.35),
-            inset 0 1px 0 rgba(255, 255, 255, 0.07),
-            inset 0 -1px 0 rgba(139, 92, 246, 0.08);
-          transform: translate3d(0, 0, 0);
-          transition:
-            transform 560ms var(--faq-ease),
-            border-color 460ms var(--faq-ease),
-            background 460ms var(--faq-ease),
-            box-shadow 460ms var(--faq-ease);
-        }
-        .portfolio-faq-card::before,
-        .portfolio-faq-card::after {
-          position: absolute;
-          inset: 0;
-          z-index: -1;
-          content: "";
-          pointer-events: none;
-        }
-        /* cursor-following light */
-        .portfolio-faq-card::before {
-          opacity: 0;
-          background: radial-gradient(
-            24rem circle at var(--faq-pointer-x, 50%) var(--faq-pointer-y, 0%),
-            rgba(168, 85, 247, 0.2),
-            transparent 46%
-          );
-          transition: opacity 400ms var(--faq-ease);
-        }
-        /* static glass reflection */
-        .portfolio-faq-card::after {
-          opacity: 0.7;
-          background: linear-gradient(118deg, rgba(255, 255, 255, 0.07), transparent 26%, transparent 74%, rgba(217, 70, 239, 0.05));
-        }
-
-        /* Active accents */
-        .portfolio-faq-strip {
-          position: absolute;
-          top: 0;
-          left: 8%;
-          right: 8%;
-          height: 1px;
-          opacity: 0;
-          background: linear-gradient(90deg, transparent, #c4b5fd, #e879f9, transparent);
-          transition: opacity 460ms var(--faq-ease);
-        }
-        .portfolio-faq-rail {
-          position: absolute;
-          top: 14%;
-          bottom: 14%;
-          left: 0;
-          width: 2px;
-          border-radius: 9999px;
-          background: linear-gradient(180deg, #8b5cf6, #d946ef);
-          box-shadow: 0 0 14px rgba(168, 85, 247, 0.75);
-          transform: scaleY(0);
-          transform-origin: center;
-          transition: transform 560ms var(--faq-ease);
-        }
-
-        .portfolio-faq-card--open {
-          border-color: rgba(168, 85, 247, 0.45);
-          background: linear-gradient(130deg, rgba(168, 85, 247, 0.14) 0%, rgba(24, 12, 42, 0.95) 46%, rgba(6, 3, 12, 0.98) 100%);
-          box-shadow:
-            0 26px 60px -18px rgba(0, 0, 0, 0.75),
-            0 0 48px -12px rgba(139, 92, 246, 0.4),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1),
-            inset 0 -1px 0 rgba(217, 70, 239, 0.14);
-        }
-        .portfolio-faq-card--open::before { opacity: 0.5; }
-        .portfolio-faq-card--open .portfolio-faq-strip { opacity: 1; }
-        .portfolio-faq-card--open .portfolio-faq-rail { transform: scaleY(1); }
-
-        .portfolio-faq-item-heading { margin: 0; }
-
-        /* ---------- Trigger: number | question | icon ---------- */
-        .portfolio-faq-trigger {
-          position: relative;
-          z-index: 1;
-          display: grid;
-          width: 100%;
-          min-height: 4.75rem;
-          grid-template-columns: auto minmax(0, 1fr) auto;
-          align-items: center;
-          gap: 0.875rem;
-          border: 0;
-          padding: 0.875rem;
-          color: #fff;
-          cursor: pointer;
-          background: transparent;
-          text-align: left;
-          -webkit-tap-highlight-color: transparent;
-        }
-        .portfolio-faq-trigger:focus-visible {
-          outline: none;
-          box-shadow: inset 0 0 0 2px rgba(196, 181, 253, 0.95), inset 0 0 0 4px rgba(3, 2, 7, 0.8);
-          border-radius: 1.4rem;
-        }
-
-        .portfolio-faq-index-wrap { display: block; }
-        .portfolio-faq-index {
-          display: grid;
-          width: 2.75rem;
-          height: 2.75rem;
-          place-items: center;
-          border: 1px solid rgba(196, 181, 253, 0.16);
-          border-radius: 0.9rem;
-          background: linear-gradient(145deg, rgba(139, 92, 246, 0.12), rgba(255, 255, 255, 0.02));
-          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 6px 14px rgba(0, 0, 0, 0.35);
-          color: rgba(237, 233, 254, 0.5);
-          font-size: 1.5rem;
-          line-height: 1;
-          letter-spacing: 0.06em;
-          transition:
-            color 380ms var(--faq-ease),
-            transform 500ms var(--faq-ease),
-            border-color 380ms var(--faq-ease),
-            box-shadow 500ms var(--faq-ease),
-            background 380ms var(--faq-ease);
-        }
-
-        .portfolio-faq-question {
-          min-width: 0;
-          font-size: clamp(1.0625rem, 0.92rem + 0.85vw, 1.5rem);
-          font-weight: 600;
-          line-height: 1.3;
-          letter-spacing: -0.02em;
-          text-wrap: balance;
-          color: rgba(255, 255, 255, 0.92);
-          transition: color 380ms var(--faq-ease), transform 380ms var(--faq-ease);
-        }
-
-        /* ---------- Icon ---------- */
-        .portfolio-faq-icon {
-          position: relative;
-          display: grid;
-          width: 2.5rem;
-          height: 2.5rem;
-          flex: none;
-          place-items: center;
-          border: 1px solid rgba(196, 181, 253, 0.2);
-          border-radius: 9999px;
-          background: linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(139, 92, 246, 0.05));
-          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 6px 16px rgba(0, 0, 0, 0.3);
-          transition:
-            transform 500ms var(--faq-ease),
-            border-color 380ms var(--faq-ease),
-            background 380ms var(--faq-ease),
-            box-shadow 380ms var(--faq-ease);
-        }
-        .portfolio-faq-icon__line {
-          position: absolute;
-          width: 0.8rem;
-          height: 1.5px;
-          border-radius: 9999px;
-          background: #fff;
-          transition: transform 500ms var(--faq-ease), opacity 320ms ease;
-        }
-        .portfolio-faq-icon__line--vertical { transform: rotate(90deg) scaleX(1); }
-
-        .portfolio-faq-card--open .portfolio-faq-question { color: #fff; }
-        .portfolio-faq-card--open .portfolio-faq-index {
-          transform: translateY(-2px) scale(1.06);
-          border-color: rgba(232, 121, 249, 0.6);
-          background: linear-gradient(145deg, rgba(168, 85, 247, 0.32), rgba(217, 70, 239, 0.12));
-          box-shadow:
-            inset 0 1px 0 rgba(255, 255, 255, 0.2),
-            0 10px 24px -6px rgba(168, 85, 247, 0.65);
-        }
-        .portfolio-faq-card--open .portfolio-faq-icon {
-          border-color: rgba(232, 121, 249, 0.6);
-          background: linear-gradient(145deg, rgba(168, 85, 247, 0.3), rgba(217, 70, 239, 0.12));
-          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 8px 22px -4px rgba(168, 85, 247, 0.6);
-          transform: rotate(180deg) scale(1.04);
-        }
-        .portfolio-faq-card--open .portfolio-faq-icon__line--vertical {
-          transform: rotate(90deg) scaleX(0);
-          opacity: 0;
-        }
-
-        /* ---------- Answer (grid-rows expansion, hidden from AT when closed) ---------- */
-        .portfolio-faq-answer {
-          position: relative;
-          z-index: 1;
-          display: grid;
-          grid-template-rows: 0fr;
-          visibility: hidden;
-          transition:
-            grid-template-rows 620ms var(--faq-ease),
-            visibility 0s linear 620ms;
-        }
-        .portfolio-faq-answer--open {
-          grid-template-rows: 1fr;
-          visibility: visible;
-          transition-delay: 0s, 0s;
-        }
-        .portfolio-faq-answer-clip { min-height: 0; overflow: hidden; }
-        .portfolio-faq-answer-content {
-          padding: 0 1rem 1.25rem 1rem;
-          color: rgba(237, 233, 254, 0.7);
-          font-size: 0.9375rem;
-          line-height: 1.75;
-          opacity: 0;
-          filter: blur(6px);
-          transform: translate3d(0, 10px, 0);
-          transition:
-            opacity 300ms var(--faq-ease),
-            transform 500ms var(--faq-ease),
-            filter 420ms var(--faq-ease);
-        }
-        .portfolio-faq-answer-content p { max-width: 62ch; }
-        .portfolio-faq-answer-content p + p { margin-top: 1rem; }
-        .portfolio-faq-answer--open .portfolio-faq-answer-content {
-          opacity: 1;
-          filter: blur(0);
-          transform: translate3d(0, 0, 0);
-          transition-delay: 120ms;
-        }
-
-        /* ---------- CTA ---------- */
-        .portfolio-faq-cta {
-          position: relative;
-          display: flex;
-          flex-direction: column;
-          gap: 1.5rem;
-          margin-top: 2.5rem;
-          padding: 1.5rem;
-          overflow: hidden;
-          border: 1px solid rgba(196, 181, 253, 0.16);
-          border-radius: 1.6rem;
-          background:
-            radial-gradient(60% 140% at 100% 50%, rgba(217, 70, 239, 0.16), transparent 70%),
-            linear-gradient(130deg, rgba(139, 92, 246, 0.12), rgba(8, 4, 16, 0.95) 60%);
-          box-shadow: 0 24px 60px -24px rgba(139, 92, 246, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-        }
-        .portfolio-faq-cta-button {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.5rem;
-          flex: none;
-          padding: 0.95rem 1.6rem;
-          border-radius: 9999px;
-          background: linear-gradient(95deg, #7c3aed, #a855f7 55%, #d946ef);
-          color: #fff;
-          font-weight: 600;
-          letter-spacing: -0.01em;
-          box-shadow: 0 10px 30px -8px rgba(168, 85, 247, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.3);
-          transition: transform 400ms var(--faq-ease), box-shadow 400ms var(--faq-ease);
-        }
-        .portfolio-faq-cta-button:focus-visible {
-          outline: 2px solid #c4b5fd;
-          outline-offset: 3px;
-        }
-
-        /* ---------- Breakpoints ---------- */
-        @media (min-width: 640px) {
-          .portfolio-faq-trigger {
-            min-height: 5.5rem;
-            gap: 1.25rem;
-            padding: 1.1rem 1.25rem;
-          }
-          .portfolio-faq-index { width: 3.25rem; height: 3.25rem; font-size: 1.85rem; }
-          .portfolio-faq-icon { width: 2.75rem; height: 2.75rem; }
-          .portfolio-faq-answer-content {
-            padding: 0 1.25rem 1.5rem calc(1.25rem + 3.25rem + 1.25rem);
-            font-size: 1rem;
-          }
-          .portfolio-faq-cta {
-            flex-direction: row;
-            align-items: center;
-            justify-content: space-between;
-            padding: 2rem 2.25rem;
-          }
-        }
-        @media (min-width: 1024px) {
-          .portfolio-faq-trigger { min-height: 6.25rem; padding: 1.25rem 1.75rem; gap: 1.6rem; }
-          .portfolio-faq-index { width: 3.75rem; height: 3.75rem; font-size: 2.1rem; }
-          .portfolio-faq-answer-content {
-            padding: 0 1.75rem 1.75rem calc(1.75rem + 3.75rem + 1.6rem);
-            font-size: 1.0625rem;
-          }
-        }
-        @media (max-width: 380px) {
-          .portfolio-faq-trigger { gap: 0.7rem; padding: 0.8rem; }
-          .portfolio-faq-index { width: 2.4rem; height: 2.4rem; font-size: 1.3rem; }
-          .portfolio-faq-icon { width: 2.25rem; height: 2.25rem; }
-        }
-
-        /* ---------- Hover: mouse only, never on touch ---------- */
-        @media (hover: hover) and (pointer: fine) {
-          .portfolio-faq-card:hover {
-            border-color: rgba(196, 181, 253, 0.3);
-            box-shadow:
-              0 30px 60px -20px rgba(0, 0, 0, 0.8),
-              0 0 36px -14px rgba(139, 92, 246, 0.5),
-              inset 0 1px 0 rgba(255, 255, 255, 0.12),
-              inset 0 -1px 0 rgba(217, 70, 239, 0.1);
-            transform: translate3d(0, -3px, 12px)
-              rotateX(var(--faq-tilt-x, 0deg))
-              rotateY(var(--faq-tilt-y, 0deg));
-          }
-          .portfolio-faq-card:hover::before { opacity: 1; }
-          .portfolio-faq-card:hover .portfolio-faq-question { transform: translateX(2px); color: #fff; }
-          .portfolio-faq-card:not(.portfolio-faq-card--open):hover .portfolio-faq-index {
-            color: rgba(237, 233, 254, 0.85);
-            border-color: rgba(196, 181, 253, 0.34);
-          }
-          .portfolio-faq-card--open:hover { border-color: rgba(232, 121, 249, 0.6); }
-          .portfolio-faq-cta-button:hover {
-            transform: translate3d(0, -2px, 0);
-            box-shadow: 0 14px 36px -8px rgba(217, 70, 239, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.35);
-          }
-        }
-
-        /* Gradient numerals when open */
-        .portfolio-faq-card--open .portfolio-faq-index-text {
-          background-image: linear-gradient(145deg, #e9d5ff, #e879f9);
-          -webkit-background-clip: text;
-          background-clip: text;
-          -webkit-text-fill-color: transparent;
-          filter: drop-shadow(0 0 8px rgba(217, 70, 239, 0.7));
-        }
-
-        /* ---------- Reduced motion ---------- */
-        @media (prefers-reduced-motion: reduce) {
-          .portfolio-faq *,
-          .portfolio-faq *::before,
-          .portfolio-faq *::after {
-            transition-duration: 1ms !important;
-            transition-delay: 0ms !important;
-            animation: none !important;
-          }
-          .portfolio-faq-card:hover { transform: none !important; }
-          .portfolio-faq-card::before { display: none; }
-          .portfolio-faq-answer-content { filter: none !important; transform: none !important; }
-        }
-      `}</style>
-    </section>
+            <div className="mt-6 flex flex-col gap-3 sm:flex-row lg:flex-col xl:flex-row">
+              <a
+                href={BOOKING_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={handleBook}
+                className={`${PRIMARY} h-[52px] px-6 text-[15px]`}
+              >
+                Book a Creative Call
+                <ArrowUpRight size={18} aria-hidden="true" className={ARROW} />
+              </a>
+              <a
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${SECONDARY} h-[52px] px-6 text-[15px]`}
+              >
+                <MessageCircle
+                  size={18}
+                  aria-hidden="true"
+                  className="text-[#B9A0FF]"
+                />
+                WhatsApp
+              </a>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+    </MotionConfig>
   );
 }

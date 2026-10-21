@@ -1,6 +1,6 @@
 "use client";
 
-import { Geist } from "next/font/google";
+import { useId, type CSSProperties, type MouseEvent, type ReactElement } from "react";
 import {
   ArrowRight,
   ArrowUp,
@@ -12,16 +12,24 @@ import {
   Phone,
   type LucideIcon,
 } from "lucide-react";
-import {
-  type CSSProperties,
-  type PointerEvent,
-  type ReactElement,
-  useEffect,
-  useRef,
-} from "react";
+import { MotionConfig, motion } from "framer-motion";
+import { Manrope, Space_Grotesk } from "next/font/google";
 
-const geist = Geist({
+/* ------------------------------------------------------------------ */
+/* Fonts: identical configs to Hero and the other sections              */
+/* ------------------------------------------------------------------ */
+
+const display = Space_Grotesk({
   subsets: ["latin"],
+  weight: ["700"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const body = Manrope({
+  subsets: ["latin"],
+  weight: ["500", "700"],
+  variable: "--font-body",
   display: "swap",
 });
 
@@ -39,7 +47,7 @@ const email = "aakashhanif.gsc@gmail.com";
 const phone = "+92 333 5673693";
 
 /* =========================================================
-   SERVICES
+   CONTENT
    ========================================================= */
 
 const services: ReadonlyArray<string> = [
@@ -51,10 +59,6 @@ const services: ReadonlyArray<string> = [
   "Social Content",
 ];
 
-/* =========================================================
-   STUDIO FEATURES
-   ========================================================= */
-
 const studioFeatures: ReadonlyArray<string> = [
   "Performance Creative",
   "AI-Powered Production",
@@ -62,24 +66,10 @@ const studioFeatures: ReadonlyArray<string> = [
   "Creative Strategy",
 ];
 
-/* =========================================================
-   METRICS
-   ========================================================= */
-
 const metrics = [
-  {
-    value: "1000+",
-    label: "Projects",
-  },
-  {
-    value: "2+",
-    label: "Years",
-  },
+  { value: "1000+", label: "Projects" },
+  { value: "2+", label: "Years" },
 ] as const;
-
-/* =========================================================
-   CONTACT DATA
-   ========================================================= */
 
 type ContactEntry = {
   label: string;
@@ -152,12 +142,7 @@ const InstagramIcon: BrandIcon = () => (
 );
 
 const XIcon: BrandIcon = () => (
-  <svg
-    viewBox="0 0 24 24"
-    fill="currentColor"
-    aria-hidden="true"
-    focusable="false"
-  >
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24h-6.657l-5.214-6.817-5.965 6.817H1.682l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.45-6.231Zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77Z" />
   </svg>
 );
@@ -188,3176 +173,576 @@ const socials: ReadonlyArray<{
   },
 ];
 
-/* =========================================================
-   OPTIONAL FOOTER NAV
-   Only real links should be added here.
-   ========================================================= */
+/* Optional footer nav. Only real links should be added here. */
+const navLinks: ReadonlyArray<{ label: string; href: string }> = [];
 
-const navLinks: ReadonlyArray<{
-  label: string;
-  href: string;
-}> = [];
+/* ------------------------------------------------------------------ */
+/* Design tokens (solid colors only, same palette as the Hero)         */
+/*   Background #08070B   Surface #15121B   Recess #100D15             */
+/*   Violet #9164F5   Deep violet #7A4AE6   Lavender #B9A0FF           */
+/*   Text #F7F5FA   Secondary #AAA5B5                                  */
+/* ------------------------------------------------------------------ */
 
-/* =========================================================
-   TYPES
-   ========================================================= */
+const EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
-type Delay = CSSProperties & Record<"--d", string>;
+const BORDER = "border-[rgba(145,100,245,0.18)]";
 
-const delay = (ms: number): Delay =>
-  ({
-    "--d": `${ms}ms`,
-  }) as Delay;
+const FOCUS =
+  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[#9164F5]";
 
-type SectionStyle = CSSProperties & {
-  "--font-body": string;
+const BTN =
+  "group inline-flex items-center justify-center gap-2 rounded-xl font-bold tracking-[-0.01em] transition-[background-color,border-color,color,transform,box-shadow] duration-300 motion-reduce:transition-none";
+
+const PRIMARY = `${BTN} bg-[#9164F5] text-[#08070B] shadow-[inset_0_1px_0_rgba(255,255,255,0.28),0_2px_0_#5B36BD,0_10px_20px_-10px_rgba(0,0,0,0.9)] hover:-translate-y-px hover:bg-[#7A4AE6] hover:text-[#F7F5FA] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_3px_0_#4B2AA3,0_14px_24px_-10px_rgba(0,0,0,0.95)] active:translate-y-0 motion-reduce:hover:translate-y-0 ${FOCUS}`;
+
+const SECONDARY = `${BTN} border border-[rgba(145,100,245,0.42)] bg-[#100D15] text-[#F7F5FA] shadow-[inset_0_1px_0_rgba(247,245,250,0.05),0_10px_20px_-12px_rgba(0,0,0,0.9)] hover:-translate-y-px hover:border-[rgba(185,160,255,0.7)] hover:bg-[#15121B] active:translate-y-0 motion-reduce:hover:translate-y-0 ${FOCUS}`;
+
+const ARROW =
+  "transition-transform duration-300 group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0";
+
+const CARD_SHADOW: CSSProperties = {
+  boxShadow: [
+    "inset 0 1px 0 rgba(247,245,250,0.06)",
+    "inset 0 -1px 0 rgba(0,0,0,0.5)",
+    "0 1px 2px rgba(0,0,0,0.6)",
+    "0 18px 36px -18px rgba(0,0,0,0.85)",
+  ].join(", "),
 };
 
-/* =========================================================
-   FOOTER
-   ========================================================= */
+const CARD = `rounded-[24px] border ${BORDER} bg-[#15121B] p-6 sm:p-7`;
+
+/*
+ * HYDRATION SAFETY
+ * Nothing rendered here depends on the visitor's "reduce motion" setting or
+ * any browser-only value. Entrance props are always identical, and
+ * <MotionConfig reducedMotion="user"> only changes how they play. Plain CSS
+ * differences use Tailwind motion-reduce: variants. matchMedia is read only
+ * inside click handlers. The copyright year is the one value that can differ
+ * between server and client (around New Year), so it is marked with
+ * suppressHydrationWarning.
+ */
+const reveal = (delay = 0, y = 18) => ({
+  initial: { opacity: 0, y },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: "-40px" },
+  transition: { duration: 0.7, ease: EASE, delay },
+});
+
+/* ------------------------------------------------------------------ */
+/* Small building blocks                                               */
+/* ------------------------------------------------------------------ */
+
+function MicroLabel({ children }: { children: string }) {
+  return (
+    <span className="block text-[11px] font-bold uppercase leading-snug tracking-[0.2em] text-[#B9A0FF]">
+      {children}
+    </span>
+  );
+}
+
+function CardHeading({
+  index,
+  label,
+  title,
+  titleId,
+  text,
+}: {
+  index: string;
+  label: string;
+  title: string;
+  titleId: string;
+  text: string;
+}) {
+  return (
+    <>
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <span
+          aria-hidden="true"
+          className={`${display.className} grid h-9 w-9 place-items-center rounded-xl border border-[rgba(145,100,245,0.28)] bg-[#100D15] text-[13px] font-bold leading-none tabular-nums text-[#B9A0FF]`}
+        >
+          {index}
+        </span>
+        <MicroLabel>{label}</MicroLabel>
+      </div>
+      <h3
+        id={titleId}
+        className={`${display.className} text-[1.6rem] font-bold leading-[1.1] tracking-[-0.04em] text-[#F7F5FA]`}
+      >
+        {title}
+      </h3>
+      <p className="mb-6 mt-2 max-w-[19rem] text-[14px] font-medium leading-6 text-[#AAA5B5]">
+        {text}
+      </p>
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Footer                                                              */
+/* ------------------------------------------------------------------ */
 
 export default function Footer() {
-  const footerRef = useRef<HTMLElement>(null);
-  const frameRef = useRef<number | null>(null);
+  const headingId = useId();
+  const servicesHeadingId = useId();
+  const contactHeadingId = useId();
 
   const year = new Date().getFullYear();
 
-  /* ---------------------------------------------------------
-     Intersection reveal
-     --------------------------------------------------------- */
-
-  useEffect(() => {
-    const footer = footerRef.current;
-
-    if (!footer) return;
-
-    const reveal = () => {
-      footer.classList.add("is-revealed");
-    };
-
-    const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    );
-
-    if (
-      reduceMotion.matches ||
-      !("IntersectionObserver" in window)
-    ) {
-      reveal();
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) {
-          reveal();
-          observer.disconnect();
-        }
-      },
-      {
-        threshold: 0.08,
-      },
-    );
-
-    observer.observe(footer);
-
-    return () => observer.disconnect();
-  }, []);
-
-  /* ---------------------------------------------------------
-     Cleanup RAF
-     --------------------------------------------------------- */
-
-  useEffect(() => {
-    return () => {
-      if (frameRef.current !== null) {
-        cancelAnimationFrame(frameRef.current);
-      }
-    };
-  }, []);
-
-  /* ---------------------------------------------------------
-     CTA 3D mouse movement
-     --------------------------------------------------------- */
-
-  const handleCtaMove = (
-    event: PointerEvent<HTMLAnchorElement>,
-  ) => {
-    if (event.pointerType !== "mouse") return;
-
-    const element = event.currentTarget;
-    const rect = element.getBoundingClientRect();
-
-    const px =
-      (event.clientX - rect.left) / rect.width;
-
-    const py =
-      (event.clientY - rect.top) / rect.height;
-
-    if (frameRef.current !== null) {
-      cancelAnimationFrame(frameRef.current);
-    }
-
-    frameRef.current = requestAnimationFrame(() => {
-      frameRef.current = null;
-
-      element.style.setProperty(
-        "--mx",
-        `${(px * 100).toFixed(1)}%`,
-      );
-
-      element.style.setProperty(
-        "--my",
-        `${(py * 100).toFixed(1)}%`,
-      );
-
-      element.style.setProperty(
-        "--rx",
-        `${((0.5 - py) * 5).toFixed(2)}deg`,
-      );
-
-      element.style.setProperty(
-        "--ry",
-        `${((px - 0.5) * 5).toFixed(2)}deg`,
-      );
+  /* Scroll to #booking if that section exists, otherwise open the booking page.
+     The motion preference is read here, inside an event handler, never in render. */
+  const handleBook = (event: MouseEvent<HTMLAnchorElement>) => {
+    const section = document.getElementById("booking");
+    if (!section) return;
+    event.preventDefault();
+    const prefersReduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    section.scrollIntoView({
+      behavior: prefersReduced ? "auto" : "smooth",
+      block: "start",
     });
   };
-
-  const handleCtaLeave = (
-    event: PointerEvent<HTMLAnchorElement>,
-  ) => {
-    if (event.pointerType !== "mouse") return;
-
-    if (frameRef.current !== null) {
-      cancelAnimationFrame(frameRef.current);
-      frameRef.current = null;
-    }
-
-    const style = event.currentTarget.style;
-
-    style.setProperty("--mx", "50%");
-    style.setProperty("--my", "30%");
-    style.setProperty("--rx", "0deg");
-    style.setProperty("--ry", "0deg");
-  };
-
-  /* ---------------------------------------------------------
-     Back to top
-     --------------------------------------------------------- */
 
   const scrollToTop = () => {
-    const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
+    const prefersReduced = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
     ).matches;
-
-    window.scrollTo({
-      top: 0,
-      behavior: reduceMotion ? "auto" : "smooth",
-    });
-  };
-
-  const sectionStyle: SectionStyle = {
-    "--font-body": geist.style.fontFamily,
+    window.scrollTo({ top: 0, behavior: prefersReduced ? "auto" : "smooth" });
   };
 
   return (
-    <footer
-      ref={footerRef}
-      id="Contact"
-      aria-labelledby="footer-heading"
-      className={`footer ${geist.className}`}
-      style={sectionStyle}
-    >
-      {/* =====================================================
-          BACKGROUND ATMOSPHERE
-          ===================================================== */}
-
-      <div
-        className="background-noise"
-        aria-hidden="true"
-      />
-
-      <div
-        className="bg-glow"
-        aria-hidden="true"
-      />
-
-      <div
-        className="bg-grid"
-        aria-hidden="true"
-      />
-
-      <div
-        className="bg-horizon"
-        aria-hidden="true"
-      />
-
-      <div
-        className="ambient ambient-one"
-        aria-hidden="true"
-      />
-
-      <div
-        className="ambient ambient-two"
-        aria-hidden="true"
-      />
-
-      <div
-        className="ambient ambient-three"
-        aria-hidden="true"
-      />
-
-      <div
-        className="orbit orbit-one"
-        aria-hidden="true"
-      />
-
-      <div
-        className="orbit orbit-two"
-        aria-hidden="true"
-      />
-
-      <div
-        className="floating-chip chip-one"
-        aria-hidden="true"
+    <MotionConfig reducedMotion="user">
+      <footer
+        id="contact"
+        aria-labelledby={headingId}
+        className={`${display.variable} ${body.variable} ${body.className} relative isolate overflow-hidden border-t ${BORDER} bg-[#08070B] pb-8 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] pt-20 text-[#F7F5FA] antialiased sm:px-8 sm:pt-28`}
       >
-        EDIT
-      </div>
+        {/* Short accent that ties the footer to the sections above it */}
+        <span
+          aria-hidden="true"
+          className="absolute left-1/2 top-0 h-px w-24 -translate-x-1/2 bg-[#9164F5]"
+        />
 
-      <div
-        className="floating-chip chip-two"
-        aria-hidden="true"
-      >
-        CREATE
-      </div>
+        <div className="mx-auto max-w-[1280px]">
+          {/* =================================================
+              HERO CTA
+              ================================================= */}
+          <div className="flex flex-col items-center text-center">
+            <motion.p
+              {...reveal(0, 14)}
+              className={`inline-flex items-center gap-2.5 rounded-full border ${BORDER} bg-[#15121B] px-4 py-2 text-[11px] font-bold uppercase leading-none tracking-[0.18em] text-[#AAA5B5]`}
+            >
+              <span aria-hidden="true" className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#9164F5] opacity-60 motion-reduce:animate-none" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#9164F5]" />
+              </span>
+              Available for select projects
+            </motion.p>
 
-      {/* =====================================================
-          MAIN SHELL
-          ===================================================== */}
+            <motion.p
+              {...reveal(0.06, 14)}
+              className="mt-6 flex items-center gap-3 text-[12px] font-bold uppercase leading-none tracking-[0.26em] text-[#B9A0FF]"
+            >
+              <span aria-hidden="true" className="h-px w-8 bg-[#B9A0FF]" />
+              Aakash Edits Lab
+              <span aria-hidden="true" className="h-px w-8 bg-[#B9A0FF]" />
+            </motion.p>
 
-      <div className="shell">
+            <motion.h2
+              {...reveal(0.12)}
+              id={headingId}
+              className={`${display.className} mt-5 max-w-4xl text-[2.4rem] font-bold leading-[1.04] tracking-[-0.045em] text-[#F7F5FA] [text-wrap:balance] min-[400px]:text-[2.8rem] sm:text-6xl lg:text-7xl`}
+            >
+              <span className="block">Your next idea deserves</span>
+              <span className="block text-[#9164F5]">better creative.</span>
+            </motion.h2>
 
-        {/* ===================================================
-            HERO CTA
-            =================================================== */}
+            <motion.p
+              {...reveal(0.18)}
+              className="mt-6 max-w-2xl text-[15px] font-medium leading-7 text-[#AAA5B5] [text-wrap:balance] sm:text-base sm:leading-8"
+            >
+              Video editing, performance creative and AI-powered content built
+              to make brands impossible to scroll past.
+            </motion.p>
 
-        <section className="hero-cta">
-          <div
-            className="status-pill reveal"
-            style={delay(0)}
-          >
-            <span className="status-dot" />
-            <span>Available for select projects</span>
-          </div>
-
-          <p
-            className="eyebrow reveal"
-            style={delay(70)}
-          >
-            <span
-              className="eyebrow-line"
-              aria-hidden="true"
-            />
-
-            Aakash Edits Lab
-
-            <span
-              className="eyebrow-line reverse"
-              aria-hidden="true"
-            />
-          </p>
-
-          <h2
-            id="footer-heading"
-            className="headline reveal"
-            style={delay(130)}
-          >
-            <span className="headline-main">
-              Your next idea deserves
-            </span>
-
-            <span className="headline-gradient">
-              better creative.
-            </span>
-          </h2>
-
-          <p
-            className="hero-copy reveal"
-            style={delay(200)}
-          >
-            Video editing, performance creative and
-            AI-powered content built to make brands
-            impossible to scroll past.
-          </p>
-
-          {/* -----------------------------------------------
-              PRIMARY ACTIONS
-              ----------------------------------------------- */}
-
-          <div
-            className="hero-actions reveal"
-            style={delay(280)}
-          >
-            <div className="cta-wrap">
-              <div
-                className="cta-glow"
-                aria-hidden="true"
-              />
-
+            {/* Actions */}
+            <motion.div
+              {...reveal(0.24)}
+              className="mt-9 flex w-full flex-col items-stretch gap-3 sm:mt-10 sm:w-auto sm:flex-row sm:items-center"
+            >
               <a
-                className="primary-cta"
                 href={bookingUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                onPointerMove={handleCtaMove}
-                onPointerLeave={handleCtaLeave}
+                onClick={handleBook}
+                className={`${PRIMARY} h-[64px] justify-between gap-4 pl-3 pr-3 text-left sm:justify-center`}
               >
                 <span
-                  className="cta-sheen"
                   aria-hidden="true"
-                />
-
-                <span
-                  className="cta-light"
-                  aria-hidden="true"
-                />
-
-                <span className="cta-icon">
-                  <CalendarDays />
-                </span>
-
-                <span className="cta-content">
-                  <strong>Book a 30-min Call</strong>
-                  <small>Let's talk about your project</small>
-                </span>
-
-                <span
-                  className="cta-arrow"
-                  aria-hidden="true"
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[rgba(8,7,11,0.16)]"
                 >
-                  <ArrowRight />
+                  <CalendarDays size={19} />
                 </span>
-
-                <span className="visually-hidden">
-                  {" "}
-                  (opens in a new tab)
+                <span className="flex min-w-0 flex-col sm:min-w-[10.5rem]">
+                  <span className="text-[15px] font-bold leading-tight">
+                    Book a 30-min Call
+                  </span>
+                  <span className="mt-1 text-[10.5px] font-bold uppercase leading-none tracking-[0.1em] opacity-70">
+                    Let&apos;s talk about your project
+                  </span>
                 </span>
+                <span
+                  aria-hidden="true"
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[rgba(8,7,11,0.16)]"
+                >
+                  <ArrowRight size={18} className={ARROW} />
+                </span>
+                <span className="sr-only"> (opens in a new tab)</span>
               </a>
-            </div>
 
-            <a
-              className="secondary-cta"
-              href={whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`${SECONDARY} h-[64px] px-6 text-[15px]`}
+              >
+                <MessageCircle
+                  size={19}
+                  aria-hidden="true"
+                  className="text-[#B9A0FF]"
+                />
+                Message on WhatsApp
+                <ExternalLink
+                  size={14}
+                  aria-hidden="true"
+                  className="opacity-60"
+                />
+                <span className="sr-only"> (opens in a new tab)</span>
+              </a>
+            </motion.div>
+
+            {/* Metrics */}
+            <motion.div
+              {...reveal(0.3, 10)}
+              role="group"
+              aria-label="Studio experience"
+              className="mt-10 flex items-center justify-center"
             >
-              <MessageCircle aria-hidden="true" />
+              {metrics.map((metric, index) => (
+                <div key={metric.label} className="flex items-center">
+                  {index > 0 && (
+                    <span
+                      aria-hidden="true"
+                      className="mx-6 h-8 w-px bg-[rgba(145,100,245,0.3)] sm:mx-8"
+                    />
+                  )}
+                  <div className="flex flex-col-reverse items-center">
+                    <span className="mt-1.5 text-[12px] font-bold uppercase leading-none tracking-[0.16em] text-[#AAA5B5]">
+                      {metric.label}
+                    </span>
+                    <strong
+                      className={`${display.className} text-[1.75rem] font-bold leading-none tracking-[-0.04em] text-[#F7F5FA]`}
+                    >
+                      {metric.value.replace("+", "")}
+                      {metric.value.endsWith("+") && (
+                        <span className="text-[#B9A0FF]">+</span>
+                      )}
+                    </strong>
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+          </div>
 
-              <span>Message on WhatsApp</span>
+          {/* =================================================
+              DIVIDER
+              ================================================= */}
+          <div
+            aria-hidden="true"
+            className="my-16 flex items-center gap-4 sm:my-20"
+          >
+            <span className="h-px flex-1 bg-[rgba(145,100,245,0.18)]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[#9164F5]" />
+            <span className="h-px flex-1 bg-[rgba(145,100,245,0.18)]" />
+          </div>
 
-              <ExternalLink
-                aria-hidden="true"
-                className="secondary-external"
+          {/* =================================================
+              STUDIO INFORMATION
+              ================================================= */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-[1.15fr_0.9fr_1fr] xl:gap-5">
+            {/* Brand card */}
+            <motion.div
+              {...reveal(0, 22)}
+              style={CARD_SHADOW}
+              className={`${CARD} min-w-0 sm:col-span-2 xl:col-span-1`}
+            >
+              <div className="flex items-center gap-4">
+                {/* Brand mark: raised violet slab */}
+                <span
+                  aria-hidden="true"
+                  className={`${display.className} grid h-[4.25rem] w-[4.25rem] shrink-0 select-none place-items-center rounded-[1.1rem] bg-[#9164F5] text-[2rem] font-bold leading-none text-[#08070B] shadow-[inset_0_1px_0_rgba(255,255,255,0.35),0_3px_0_#5B36BD,0_12px_24px_-10px_rgba(0,0,0,0.9)]`}
+                >
+                  A
+                </span>
+
+                <div className="min-w-0">
+                  <MicroLabel>Creative Studio</MicroLabel>
+                  <h3
+                    className={`${display.className} mt-1.5 text-[1.5rem] font-bold leading-[1.1] tracking-[-0.04em] text-[#F7F5FA]`}
+                  >
+                    Aakash <span className="text-[#B9A0FF]">Edits Lab</span>
+                  </h3>
+                  <p className="mt-1.5 text-[13px] font-medium leading-snug text-[#AAA5B5]">
+                    Akash Hanif <span aria-hidden="true">•</span> Video Editor
+                    &amp; Creative Strategist
+                  </p>
+                </div>
+              </div>
+
+              <p className="mt-6 max-w-lg text-[15px] font-medium leading-7 text-[#AAA5B5]">
+                Turning raw footage, ideas and offers into high-impact creative
+                for modern digital platforms.
+              </p>
+
+              <ul className="m-0 mt-6 grid list-none grid-cols-1 gap-2.5 p-0 min-[420px]:grid-cols-2">
+                {studioFeatures.map((feature) => (
+                  <li
+                    key={feature}
+                    className={`flex min-h-12 items-center gap-3 rounded-xl border ${BORDER} bg-[#100D15] px-3 py-2.5 text-[13px] font-bold leading-snug text-[#F7F5FA]`}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[#9164F5] text-[#08070B]"
+                    >
+                      <Check className="h-3 w-3" strokeWidth={3} />
+                    </span>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+
+              <div
+                className={`mt-6 flex flex-wrap items-center gap-x-3 gap-y-1 border-t ${BORDER} pt-4 text-[11px] font-bold uppercase leading-none tracking-[0.18em] text-[#AAA5B5]`}
+              >
+                <span>Akash Hanif</span>
+                <span
+                  aria-hidden="true"
+                  className="h-px w-8 bg-[rgba(145,100,245,0.4)]"
+                />
+                <span>Aakash Edits Lab</span>
+              </div>
+            </motion.div>
+
+            {/* Services card */}
+            <motion.section
+              {...reveal(0.08, 22)}
+              aria-labelledby={servicesHeadingId}
+              style={CARD_SHADOW}
+              className={`${CARD} min-w-0`}
+            >
+              <CardHeading
+                index="01"
+                label="What I do"
+                title="Services"
+                titleId={servicesHeadingId}
+                text="Creative built around attention, storytelling and performance."
               />
 
-              <span className="visually-hidden">
-                {" "}
-                (opens in a new tab)
-              </span>
-            </a>
+              <ul className={`m-0 list-none border-t p-0 ${BORDER}`}>
+                {services.map((service, index) => (
+                  <li
+                    key={service}
+                    className={`group flex min-h-14 items-center gap-3 border-b px-1 py-2 ${BORDER}`}
+                  >
+                    <span
+                      className={`${display.className} w-7 shrink-0 text-[13px] font-bold leading-none tabular-nums text-[rgba(185,160,255,0.55)] transition-colors duration-300 motion-reduce:transition-none [@media(hover:hover)]:group-hover:text-[#B9A0FF]`}
+                    >
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span className="flex-1 text-[15px] font-bold leading-snug text-[#F7F5FA]">
+                      {service}
+                    </span>
+                    <ArrowRight
+                      aria-hidden="true"
+                      className="h-4 w-4 shrink-0 text-[rgba(185,160,255,0.55)] transition-[transform,color] duration-300 motion-reduce:transition-none [@media(hover:hover)]:group-hover:translate-x-1 [@media(hover:hover)]:group-hover:text-[#B9A0FF]"
+                    />
+                  </li>
+                ))}
+              </ul>
+            </motion.section>
+
+            {/* Contact card */}
+            <motion.section
+              {...reveal(0.16, 22)}
+              aria-labelledby={contactHeadingId}
+              style={CARD_SHADOW}
+              className={`${CARD} min-w-0`}
+            >
+              <CardHeading
+                index="02"
+                label="Get in touch"
+                title="Contact"
+                titleId={contactHeadingId}
+                text="Choose the channel that works best for you."
+              />
+
+              <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
+                {contacts.map(({ label, value, href, external, icon: Icon }) => (
+                  <li key={label}>
+                    <a
+                      href={href}
+                      {...(external
+                        ? { target: "_blank", rel: "noopener noreferrer" }
+                        : {})}
+                      className={`group flex min-h-[3.75rem] items-center gap-3 rounded-2xl border ${BORDER} bg-[#100D15] p-2.5 pr-3.5 transition-[border-color,transform] duration-300 motion-reduce:transition-none [@media(hover:hover)]:hover:-translate-y-px [@media(hover:hover)]:hover:border-[rgba(185,160,255,0.55)] motion-reduce:[@media(hover:hover)]:hover:translate-y-0 ${FOCUS}`}
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[rgba(145,100,245,0.3)] bg-[#15121B] text-[#B9A0FF] transition-[background-color,border-color,color] duration-300 motion-reduce:transition-none group-hover:border-[#9164F5] group-hover:bg-[#9164F5] group-hover:text-[#08070B]"
+                      >
+                        <Icon className="h-[18px] w-[18px]" />
+                      </span>
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="text-[11px] font-bold uppercase leading-none tracking-[0.16em] text-[#AAA5B5]">
+                          {label}
+                        </span>
+                        <span className="mt-1.5 break-words text-[14px] font-bold leading-snug text-[#F7F5FA] [overflow-wrap:anywhere]">
+                          {value}
+                        </span>
+                      </span>
+                      <ArrowRight
+                        aria-hidden="true"
+                        className={`h-4 w-4 shrink-0 text-[#B9A0FF] ${ARROW}`}
+                      />
+                      {external ? (
+                        <span className="sr-only"> (opens in a new tab)</span>
+                      ) : null}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </motion.section>
           </div>
 
-          {/* -----------------------------------------------
-              METRICS
-              ----------------------------------------------- */}
-
-          <div
-            className="metrics reveal"
-            style={delay(360)}
-            aria-label="Studio experience"
+          {/* =================================================
+              SOCIAL
+              ================================================= */}
+          <motion.div
+            {...reveal(0, 14)}
+            className={`mt-10 flex flex-col gap-6 border-t pt-8 ${BORDER} lg:flex-row lg:items-center lg:justify-between`}
           >
-            {metrics.map((metric, index) => (
-              <div
-                className="metric"
-                key={metric.label}
+            <div className="flex items-center gap-3.5">
+              <span
+                aria-hidden="true"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-[rgba(145,100,245,0.3)] bg-[#100D15]"
               >
-                <strong>{metric.value}</strong>
-
-                <span>{metric.label}</span>
-
-                {index < metrics.length - 1 ? (
-                  <span
-                    className="metric-divider"
-                    aria-hidden="true"
-                  />
-                ) : null}
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ===================================================
-            DIVIDER
-            =================================================== */}
-
-        <div
-          className="cinematic-divider"
-          aria-hidden="true"
-        >
-          <span />
-          <i />
-          <span />
-        </div>
-
-        {/* ===================================================
-            STUDIO INFORMATION
-            =================================================== */}
-
-        <section className="studio-grid">
-
-          {/* -----------------------------------------------
-              BRAND CARD
-              ----------------------------------------------- */}
-
-          <div
-            className="brand-card glass-card reveal"
-            style={delay(0)}
-          >
-            <div className="card-glow" />
-
-            <div className="brand-top">
-              <div className="brand-mark">
-                <div className="brand-mark-back">
-                  A
-                </div>
-
-                <div className="brand-mark-front">
-                  A
-                </div>
-
-                <span className="brand-mark-light" />
-              </div>
-
-              <div className="brand-heading">
-                <span className="micro-label">
-                  CREATIVE STUDIO
-                </span>
-
-                <h3>
-                  Aakash
-                  <span> Edits Lab</span>
-                </h3>
-
-                <p>
-                  Akash Hanif
-                  <span> • </span>
-                  Video Editor &amp; Creative Strategist
+                <span className="h-1.5 w-1.5 rounded-full bg-[#9164F5]" />
+              </span>
+              <div>
+                <MicroLabel>Connect</MicroLabel>
+                <p className="mt-1 text-[15px] font-bold leading-none text-[#F7F5FA]">
+                  Follow the work
                 </p>
               </div>
             </div>
 
-            <p className="brand-description">
-              Turning raw footage, ideas and offers into
-              high-impact creative for modern digital
-              platforms.
-            </p>
-
-            <div className="feature-grid">
-              {studioFeatures.map((feature) => (
-                <div
-                  className="feature"
-                  key={feature}
-                >
-                  <span className="feature-check">
-                    <Check aria-hidden="true" />
-                  </span>
-
-                  <span>{feature}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="brand-footer">
-              <span>AKASH HANIF</span>
-
-              <span
-                className="brand-footer-line"
-                aria-hidden="true"
-              />
-
-              <span>AAKASH EDITS LAB</span>
-            </div>
-          </div>
-
-          {/* -----------------------------------------------
-              SERVICES CARD
-              ----------------------------------------------- */}
-
-          <section
-            className="services-card glass-card reveal"
-            style={delay(100)}
-            aria-labelledby="services-heading"
-          >
-            <div className="card-topline">
-              <span className="section-index">
-                01
-              </span>
-
-              <span className="micro-label">
-                WHAT I DO
-              </span>
-            </div>
-
-            <div className="section-heading">
-              <h3 id="services-heading">
-                Services
-              </h3>
-
-              <p>
-                Creative built around attention,
-                storytelling and performance.
-              </p>
-            </div>
-
-            <ul className="service-list">
-              {services.map((service, index) => (
-                <li
-                  key={service}
-                  className="service-item"
-                >
-                  <span className="service-number">
-                    {String(index + 1).padStart(2, "0")}
-                  </span>
-
-                  <span className="service-name">
-                    {service}
-                  </span>
-
-                  <ArrowRight
-                    aria-hidden="true"
-                    className="service-arrow"
-                  />
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          {/* -----------------------------------------------
-              CONTACT CARD
-              ----------------------------------------------- */}
-
-          <section
-            className="contact-card glass-card reveal"
-            style={delay(180)}
-            aria-labelledby="contact-heading"
-          >
-            <div className="card-topline">
-              <span className="section-index">
-                02
-              </span>
-
-              <span className="micro-label">
-                GET IN TOUCH
-              </span>
-            </div>
-
-            <div className="section-heading">
-              <h3 id="contact-heading">
-                Contact
-              </h3>
-
-              <p>
-                Choose the channel that works best for
-                you.
-              </p>
-            </div>
-
-            <ul className="contact-list">
-              {contacts.map(
-                ({
-                  label,
-                  value,
-                  href,
-                  external,
-                  icon: Icon,
-                }) => (
-                  <li key={label}>
+            <nav aria-label="Social profiles" className="min-w-0">
+              <ul className="m-0 grid list-none grid-cols-1 gap-3 p-0 sm:grid-cols-3 lg:flex lg:flex-wrap lg:justify-end">
+                {socials.map(({ label, handle, href, icon: Icon }) => (
+                  <li key={label} className="min-w-0">
                     <a
-                      className="contact-item"
-                      href={href}
-                      {...(external
-                        ? {
-                            target: "_blank",
-                            rel: "noopener noreferrer",
-                          }
-                        : {})}
-                    >
-                      <span className="contact-icon">
-                        <Icon aria-hidden="true" />
-                      </span>
-
-                      <span className="contact-copy">
-                        <span className="contact-label">
-                          {label}
-                        </span>
-
-                        <span className="contact-value">
-                          {value}
-                        </span>
-                      </span>
-
-                      <ArrowRight
-                        aria-hidden="true"
-                        className="contact-arrow"
-                      />
-
-                      {external ? (
-                        <span className="visually-hidden">
-                          {" "}
-                          (opens in a new tab)
-                        </span>
-                      ) : null}
-                    </a>
-                  </li>
-                ),
-              )}
-            </ul>
-          </section>
-        </section>
-
-        {/* ===================================================
-            SOCIAL / FOOTER UTILITY
-            =================================================== */}
-
-        <section
-          className="utility reveal"
-          style={delay(240)}
-        >
-          <div className="social-intro">
-            <span className="social-orbit">
-              <span />
-            </span>
-
-            <div>
-              <span className="micro-label">
-                CONNECT
-              </span>
-
-              <p>
-                Follow the work
-              </p>
-            </div>
-          </div>
-
-          <nav
-            aria-label="Social profiles"
-            className="social-navigation"
-          >
-            <ul className="social-list">
-              {socials.map(
-                ({
-                  label,
-                  handle,
-                  href,
-                  icon: Icon,
-                }) => (
-                  <li key={label}>
-                    <a
-                      className="social-card"
                       href={href}
                       target="_blank"
                       rel="noopener noreferrer"
                       aria-label={`${label}: ${handle} (opens in a new tab)`}
+                      className={`group flex min-h-[3.5rem] items-center gap-3 rounded-2xl border ${BORDER} bg-[#15121B] px-3 py-2 transition-[border-color,transform] duration-300 motion-reduce:transition-none [@media(hover:hover)]:hover:-translate-y-px [@media(hover:hover)]:hover:border-[rgba(185,160,255,0.55)] motion-reduce:[@media(hover:hover)]:hover:translate-y-0 ${FOCUS}`}
                     >
-                      <span className="social-icon">
+                      <span
+                        aria-hidden="true"
+                        className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-[rgba(145,100,245,0.3)] bg-[#100D15] text-[#B9A0FF] transition-[background-color,border-color,color] duration-300 motion-reduce:transition-none group-hover:border-[#9164F5] group-hover:bg-[#9164F5] group-hover:text-[#08070B] [&_svg]:h-[17px] [&_svg]:w-[17px]"
+                      >
                         <Icon />
                       </span>
-
-                      <span className="social-copy">
-                        <span className="social-label">
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="text-[10.5px] font-bold uppercase leading-none tracking-[0.16em] text-[#AAA5B5]">
                           {label}
                         </span>
-
-                        <span className="social-handle">
+                        <span className="mt-1.5 truncate text-[13.5px] font-bold leading-none text-[#F7F5FA]">
                           {handle}
                         </span>
                       </span>
-
                       <ExternalLink
                         aria-hidden="true"
-                        className="social-external"
+                        className="h-3.5 w-3.5 shrink-0 text-[rgba(185,160,255,0.6)] transition-transform duration-300 motion-reduce:transition-none group-hover:-translate-y-px group-hover:translate-x-px"
                       />
-                    </a>
-                  </li>
-                ),
-              )}
-            </ul>
-          </nav>
-        </section>
-
-        {/* ===================================================
-            OPTIONAL NAV + BACK TO TOP
-            =================================================== */}
-
-        <div className="bottom-navigation">
-          {navLinks.length > 0 ? (
-            <nav
-              aria-label="Footer"
-              className="footer-nav"
-            >
-              <ul>
-                {navLinks.map(({ label, href }) => (
-                  <li key={href}>
-                    <a href={href}>
-                      {label}
                     </a>
                   </li>
                 ))}
               </ul>
             </nav>
-          ) : (
-            <span className="bottom-note">
-              Video editing • Creative strategy •
-              Performance content
-            </span>
-          )}
+          </motion.div>
 
-          <button
-            type="button"
-            className="to-top"
-            onClick={scrollToTop}
-            aria-label="Back to top"
-          >
-            <span>Back to top</span>
+          {/* =================================================
+              BOTTOM NAVIGATION
+              ================================================= */}
+          <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            {navLinks.length > 0 ? (
+              <nav aria-label="Footer">
+                <ul className="m-0 flex list-none flex-wrap gap-1 p-0">
+                  {navLinks.map(({ label, href }) => (
+                    <li key={href}>
+                      <a
+                        href={href}
+                        className={`inline-flex min-h-11 items-center rounded-lg px-3 text-[13px] font-bold text-[#AAA5B5] transition-colors duration-300 hover:text-[#F7F5FA] motion-reduce:transition-none ${FOCUS}`}
+                      >
+                        {label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            ) : (
+              <span className="text-[11px] font-bold uppercase leading-relaxed tracking-[0.14em] text-[#AAA5B5]">
+                Video editing • Creative strategy • Performance content
+              </span>
+            )}
 
-            <ArrowUp aria-hidden="true" />
-          </button>
-        </div>
-
-        {/* ===================================================
-            CLOSING SIGNATURE
-            =================================================== */}
-
-        <div className="closing">
-          <div
-            className="closing-line"
-            aria-hidden="true"
-          >
-            <span />
-            <i />
-            <span />
+            <button
+              type="button"
+              onClick={scrollToTop}
+              aria-label="Back to top"
+              className={`${SECONDARY} h-11 w-full px-5 text-[13px] sm:w-auto`}
+            >
+              Back to top
+              <ArrowUp size={15} aria-hidden="true" className="text-[#B9A0FF]" />
+            </button>
           </div>
 
-          <p className="signature">
-            Crafted for attention. Built for impact.
-          </p>
+          {/* =================================================
+              CLOSING SIGNATURE
+              ================================================= */}
+          <div className="mt-14 flex flex-col items-center gap-4 text-center sm:mt-16">
+            <div
+              aria-hidden="true"
+              className="flex w-full max-w-sm items-center gap-3"
+            >
+              <span className="h-px flex-1 bg-[rgba(145,100,245,0.18)]" />
+              <span className="h-1 w-1 rounded-full bg-[#9164F5]" />
+              <span className="h-px flex-1 bg-[rgba(145,100,245,0.18)]" />
+            </div>
 
-          <p className="copyright">
-            © {year} Aakash Edits Lab · Akash Hanif.
-            All rights reserved.
-          </p>
+            <p className="m-0 text-[11px] font-bold uppercase leading-relaxed tracking-[0.26em] text-[#B9A0FF]">
+              Crafted for attention. Built for impact.
+            </p>
+
+            <p className="m-0 text-[12.5px] font-medium leading-relaxed text-[#AAA5B5]">
+              ©{" "}
+              <span suppressHydrationWarning>{year}</span> Aakash Edits Lab ·
+              Akash Hanif. All rights reserved.
+            </p>
+          </div>
         </div>
-      </div>
-
-      {/* =====================================================
-          STYLES
-          ===================================================== */}
-
-      <style jsx>{`
-        /* ===================================================
-           CORE
-           =================================================== */
-
-        .footer {
-          --black: #030305;
-          --black-soft: #07070c;
-          --surface: rgba(255, 255, 255, 0.045);
-          --surface-strong: rgba(255, 255, 255, 0.065);
-
-          --violet: #6d28d9;
-          --violet-bright: #7c3aed;
-          --purple: #a855f7;
-          --fuchsia: #d946ef;
-          --lavender: #c4b5fd;
-
-          --white: #ffffff;
-          --text: #f4f3fa;
-          --muted: #9b9aad;
-          --muted-strong: #c7c5d5;
-
-          --border: rgba(255, 255, 255, 0.1);
-          --border-purple: rgba(168, 85, 247, 0.28);
-
-          --ease: cubic-bezier(0.16, 1, 0.3, 1);
-
-          position: relative;
-          isolation: isolate;
-          overflow: clip;
-
-          padding:
-            clamp(5rem, 9vw, 9rem)
-            clamp(1rem, 4vw, 4rem)
-            2rem;
-
-          color: var(--white);
-          background:
-            radial-gradient(
-              circle at 50% -10%,
-              rgba(109, 40, 217, 0.12),
-              transparent 38%
-            ),
-            var(--black);
-
-          font-family: var(--font-body);
-        }
-
-        .shell {
-          position: relative;
-          z-index: 5;
-          width: min(100%, 90rem);
-          margin: 0 auto;
-        }
-
-        .visually-hidden {
-          position: absolute;
-          width: 1px;
-          height: 1px;
-          overflow: hidden;
-          clip-path: inset(50%);
-          white-space: nowrap;
-        }
-
-        /* ===================================================
-           ATMOSPHERE
-           =================================================== */
-
-        .background-noise {
-          position: absolute;
-          inset: 0;
-          z-index: -10;
-          pointer-events: none;
-          opacity: 0.035;
-
-          background-image:
-            url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
-        }
-
-        .bg-glow {
-          position: absolute;
-          inset: 0;
-          z-index: -8;
-          pointer-events: none;
-
-          background:
-            radial-gradient(
-              ellipse 60% 34% at 50% 12%,
-              rgba(124, 58, 237, 0.24),
-              transparent 72%
-            ),
-            radial-gradient(
-              ellipse 30% 28% at 92% 54%,
-              rgba(217, 70, 239, 0.11),
-              transparent 72%
-            ),
-            radial-gradient(
-              ellipse 32% 28% at 2% 72%,
-              rgba(109, 40, 217, 0.12),
-              transparent 72%
-            );
-        }
-
-        .bg-grid {
-          position: absolute;
-          inset: 0;
-          z-index: -7;
-          pointer-events: none;
-          opacity: 0.42;
-
-          background-image:
-            linear-gradient(
-              rgba(255, 255, 255, 0.022) 1px,
-              transparent 1px
-            ),
-            linear-gradient(
-              90deg,
-              rgba(255, 255, 255, 0.022) 1px,
-              transparent 1px
-            );
-
-          background-size: 4.5rem 4.5rem;
-
-          mask-image:
-            radial-gradient(
-              ellipse 70% 60% at 50% 30%,
-              #000 0%,
-              transparent 78%
-            );
-          -webkit-mask-image:
-            radial-gradient(
-              ellipse 70% 60% at 50% 30%,
-              #000 0%,
-              transparent 78%
-            );
-        }
-
-        .bg-horizon {
-          position: absolute;
-          top: 31rem;
-          left: 50%;
-          z-index: -6;
-
-          width: min(100rem, 140%);
-          height: 1px;
-
-          transform: translateX(-50%);
-
-          pointer-events: none;
-
-          background:
-            linear-gradient(
-              90deg,
-              transparent,
-              rgba(168, 85, 247, 0.55),
-              rgba(217, 70, 239, 0.45),
-              rgba(168, 85, 247, 0.55),
-              transparent
-            );
-
-          box-shadow:
-            0 0 45px 7px rgba(124, 58, 237, 0.2);
-        }
-
-        .ambient {
-          position: absolute;
-          z-index: -5;
-          pointer-events: none;
-          border-radius: 50%;
-          filter: blur(0.2px);
-        }
-
-        .ambient-one {
-          top: 5%;
-          right: 5%;
-
-          width: clamp(5rem, 8vw, 8rem);
-          aspect-ratio: 1;
-
-          background:
-            radial-gradient(
-              circle at 30% 28%,
-              rgba(255, 255, 255, 0.5),
-              rgba(196, 181, 253, 0.25) 17%,
-              rgba(109, 40, 217, 0.32) 48%,
-              rgba(5, 5, 9, 0.95) 80%
-            );
-
-          box-shadow:
-            0 0 70px rgba(124, 58, 237, 0.35),
-            inset 0 0 24px rgba(217, 70, 239, 0.2);
-
-          animation: float 16s ease-in-out infinite;
-        }
-
-        .ambient-two {
-          left: -4rem;
-          top: 48%;
-
-          width: 10rem;
-          aspect-ratio: 1;
-
-          border: 1px solid rgba(168, 85, 247, 0.2);
-
-          box-shadow:
-            0 0 40px rgba(124, 58, 237, 0.1),
-            inset 0 0 30px rgba(124, 58, 237, 0.06);
-
-          transform: rotateX(68deg);
-          animation: ring-drift 28s linear infinite;
-        }
-
-        .ambient-three {
-          right: 4%;
-          bottom: 18%;
-
-          width: 4rem;
-          aspect-ratio: 1;
-
-          background:
-            linear-gradient(
-              145deg,
-              rgba(217, 70, 239, 0.35),
-              rgba(109, 40, 217, 0.08)
-            );
-
-          border: 1px solid rgba(196, 181, 253, 0.2);
-
-          animation: float 20s ease-in-out -6s infinite;
-        }
-
-        .orbit {
-          position: absolute;
-          z-index: -4;
-          pointer-events: none;
-          border: 1px solid rgba(168, 85, 247, 0.12);
-          border-radius: 50%;
-          transform-style: preserve-3d;
-        }
-
-        .orbit-one {
-          top: 10%;
-          right: -9rem;
-
-          width: 28rem;
-          height: 12rem;
-
-          transform: rotate(-20deg);
-          box-shadow: 0 0 50px rgba(109, 40, 217, 0.06);
-        }
-
-        .orbit-two {
-          bottom: 7%;
-          left: -12rem;
-
-          width: 30rem;
-          height: 14rem;
-
-          transform: rotate(25deg);
-        }
-
-        .floating-chip {
-          position: absolute;
-          z-index: -3;
-
-          padding: 0.45rem 0.75rem;
-
-          border: 1px solid rgba(196, 181, 253, 0.14);
-          border-radius: 999px;
-
-          color: rgba(196, 181, 253, 0.42);
-
-          background: rgba(10, 7, 18, 0.45);
-
-          font-size: 0.5rem;
-          font-weight: 700;
-          letter-spacing: 0.22em;
-
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-
-          transform: rotate(-8deg);
-        }
-
-        .chip-one {
-          top: 25%;
-          right: 3%;
-        }
-
-        .chip-two {
-          bottom: 28%;
-          left: 3%;
-          transform: rotate(7deg);
-        }
-
-        /* ===================================================
-           REVEAL
-           =================================================== */
-
-        .reveal {
-          opacity: 0;
-          transform: translate3d(0, 24px, 0);
-
-          transition:
-            opacity 0.95s var(--d, 0ms) var(--ease),
-            transform 0.95s var(--d, 0ms) var(--ease);
-        }
-
-        .is-revealed .reveal {
-          opacity: 1;
-          transform: translate3d(0, 0, 0);
-        }
-
-        /* ===================================================
-           HERO CTA
-           =================================================== */
-
-        .hero-cta {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          text-align: center;
-        }
-
-        .status-pill {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.55rem;
-
-          margin-bottom: 1.5rem;
-          padding: 0.5rem 0.85rem;
-
-          border: 1px solid rgba(168, 85, 247, 0.25);
-          border-radius: 999px;
-
-          background:
-            linear-gradient(
-              180deg,
-              rgba(255, 255, 255, 0.07),
-              rgba(255, 255, 255, 0.025)
-            );
-
-          box-shadow:
-            inset 0 1px 0 rgba(255, 255, 255, 0.1),
-            0 0 30px rgba(124, 58, 237, 0.08);
-
-          color: #c8c5d7;
-
-          font-size: 0.62rem;
-          font-weight: 600;
-          letter-spacing: 0.14em;
-          text-transform: uppercase;
-
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-        }
-
-        .status-dot {
-          width: 0.4rem;
-          height: 0.4rem;
-
-          border-radius: 50%;
-
-          background: #d946ef;
-
-          box-shadow:
-            0 0 0 4px rgba(217, 70, 239, 0.1),
-            0 0 14px rgba(217, 70, 239, 0.9);
-
-          animation: pulse-dot 2.5s ease-in-out infinite;
-        }
-
-        .eyebrow {
-          display: inline-flex;
-          align-items: center;
-          gap: 0.7rem;
-
-          margin: 0 0 1.5rem;
-
-          color: var(--lavender);
-
-          font-size: 0.68rem;
-          font-weight: 700;
-          letter-spacing: 0.28em;
-          text-transform: uppercase;
-        }
-
-        .eyebrow-line {
-          width: 2.2rem;
-          height: 1px;
-
-          background:
-            linear-gradient(
-              90deg,
-              transparent,
-              var(--fuchsia)
-            );
-
-          box-shadow:
-            0 0 12px rgba(217, 70, 239, 0.45);
-        }
-
-        .eyebrow-line.reverse {
-          background:
-            linear-gradient(
-              90deg,
-              var(--fuchsia),
-              transparent
-            );
-        }
-
-        .headline {
-          max-width: 65rem;
-          margin: 0;
-
-          font-weight: 650;
-          letter-spacing: -0.065em;
-          line-height: 0.95;
-        }
-
-        .headline-main {
-          display: block;
-
-          font-size: clamp(
-            2.65rem,
-            7vw,
-            6.8rem
-          );
-        }
-
-        .headline-gradient {
-          display: block;
-
-          margin-top: 0.12em;
-
-          font-size: clamp(
-            2.65rem,
-            7vw,
-            6.8rem
-          );
-
-          background:
-            linear-gradient(
-              100deg,
-              #ffffff 0%,
-              #e9ddff 23%,
-              #a855f7 58%,
-              #d946ef 100%
-            );
-
-          -webkit-background-clip: text;
-          background-clip: text;
-
-          color: transparent;
-
-          filter:
-            drop-shadow(
-              0 0 28px rgba(168, 85, 247, 0.24)
-            );
-        }
-
-        .hero-copy {
-          max-width: 43rem;
-
-          margin:
-            clamp(1.5rem, 3vw, 2.2rem)
-            0
-            0;
-
-          color: var(--muted);
-
-          font-size: clamp(
-            0.98rem,
-            1.35vw,
-            1.12rem
-          );
-
-          line-height: 1.75;
-          text-wrap: balance;
-        }
-
-        /* ===================================================
-           HERO ACTIONS
-           =================================================== */
-
-        .hero-actions {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-wrap: wrap;
-          gap: 0.8rem;
-
-          width: 100%;
-
-          margin-top: clamp(
-            2rem,
-            4vw,
-            3.2rem
-          );
-        }
-
-        .cta-wrap {
-          position: relative;
-          display: inline-flex;
-        }
-
-        .cta-glow {
-          position: absolute;
-          inset: 12% -10%;
-
-          border-radius: 999px;
-
-          background:
-            radial-gradient(
-              ellipse,
-              rgba(168, 85, 247, 0.55),
-              rgba(217, 70, 239, 0.18) 42%,
-              transparent 72%
-            );
-
-          filter: blur(22px);
-
-          pointer-events: none;
-        }
-
-        .primary-cta {
-          --mx: 50%;
-          --my: 30%;
-          --rx: 0deg;
-          --ry: 0deg;
-
-          position: relative;
-
-          display: inline-flex;
-          align-items: center;
-
-          gap: 0.85rem;
-
-          min-height: 4.35rem;
-
-          padding:
-            0.75rem
-            0.9rem
-            0.75rem
-            0.85rem;
-
-          overflow: hidden;
-
-          border: 1px solid
-            rgba(217, 70, 239, 0.58);
-
-          border-radius: 1.35rem;
-
-          color: #fff;
-          text-decoration: none;
-
-          background:
-            linear-gradient(
-              180deg,
-              rgba(255, 255, 255, 0.15),
-              rgba(255, 255, 255, 0) 45%
-            ),
-            linear-gradient(
-              135deg,
-              #5b21b6 0%,
-              #7c3aed 52%,
-              #a21caf 100%
-            );
-
-          box-shadow:
-            inset 0 1px 0
-              rgba(255, 255, 255, 0.45),
-            inset 0 -3px 0
-              rgba(46, 16, 101, 0.55),
-            0 18px 38px
-              rgba(76, 29, 149, 0.42),
-            0 0 42px
-              rgba(124, 58, 237, 0.28);
-
-          transition:
-            transform 0.5s var(--ease),
-            box-shadow 0.5s var(--ease),
-            filter 0.5s ease;
-        }
-
-        .cta-icon {
-          position: relative;
-          z-index: 3;
-
-          display: grid;
-          place-items: center;
-
-          width: 2.8rem;
-          height: 2.8rem;
-
-          border: 1px solid
-            rgba(255, 255, 255, 0.23);
-
-          border-radius: 0.95rem;
-
-          background:
-            rgba(255, 255, 255, 0.12);
-
-          box-shadow:
-            inset 0 1px 0
-              rgba(255, 255, 255, 0.25);
-        }
-
-        .cta-icon :global(svg) {
-          width: 1.1rem;
-          height: 1.1rem;
-        }
-
-        .cta-content {
-          position: relative;
-          z-index: 3;
-
-          display: flex;
-          flex-direction: column;
-
-          min-width: 10.5rem;
-
-          text-align: left;
-        }
-
-        .cta-content strong {
-          font-size: 0.98rem;
-          font-weight: 700;
-          letter-spacing: -0.02em;
-        }
-
-        .cta-content small {
-          margin-top: 0.16rem;
-
-          color: rgba(255, 255, 255, 0.7);
-
-          font-size: 0.63rem;
-          font-weight: 500;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-        }
-
-        .cta-arrow {
-          position: relative;
-          z-index: 3;
-
-          display: grid;
-          place-items: center;
-
-          width: 2.8rem;
-          height: 2.8rem;
-
-          border: 1px solid
-            rgba(255, 255, 255, 0.28);
-
-          border-radius: 0.95rem;
-
-          background:
-            rgba(255, 255, 255, 0.13);
-
-          transition:
-            transform 0.5s var(--ease);
-        }
-
-        .cta-arrow :global(svg) {
-          width: 1.1rem;
-          height: 1.1rem;
-        }
-
-        .cta-light {
-          position: absolute;
-          inset: 0;
-          z-index: 2;
-
-          pointer-events: none;
-
-          opacity: 0;
-
-          background:
-            radial-gradient(
-              180px circle at var(--mx) var(--my),
-              rgba(255, 255, 255, 0.3),
-              transparent 66%
-            );
-
-          transition: opacity 0.45s ease;
-        }
-
-        .cta-sheen {
-          position: absolute;
-          top: 0;
-          bottom: 0;
-          left: 0;
-          z-index: 1;
-
-          width: 35%;
-
-          pointer-events: none;
-
-          background:
-            linear-gradient(
-              105deg,
-              transparent,
-              rgba(255, 255, 255, 0.24),
-              transparent
-            );
-
-          transform:
-            translate3d(-180%, 0, 0)
-            skewX(-18deg);
-
-          animation:
-            sheen 8s var(--ease) 2s infinite;
-        }
-
-        .secondary-cta {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.65rem;
-
-          min-height: 4.35rem;
-
-          padding:
-            0 1.25rem;
-
-          border: 1px solid
-            rgba(255, 255, 255, 0.1);
-
-          border-radius: 1.35rem;
-
-          color: #dddbea;
-
-          background:
-            rgba(255, 255, 255, 0.035);
-
-          box-shadow:
-            inset 0 1px 0
-              rgba(255, 255, 255, 0.07);
-
-          font-size: 0.86rem;
-          font-weight: 600;
-
-          text-decoration: none;
-
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-
-          transition:
-            transform 0.45s var(--ease),
-            border-color 0.45s ease,
-            background 0.45s ease,
-            color 0.3s ease;
-        }
-
-        .secondary-cta :global(svg:first-child) {
-          width: 1.15rem;
-          height: 1.15rem;
-          color: #d8b4fe;
-        }
-
-        .secondary-external {
-          width: 0.82rem;
-          height: 0.82rem;
-
-          opacity: 0.45;
-        }
-
-        /* ===================================================
-           METRICS
-           =================================================== */
-
-        .metrics {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-
-          margin-top: 2.8rem;
-        }
-
-        .metric {
-          position: relative;
-
-          display: flex;
-          align-items: baseline;
-          gap: 0.5rem;
-
-          padding: 0 1.4rem;
-        }
-
-        .metric strong {
-          font-size: 1.05rem;
-          font-weight: 750;
-          letter-spacing: -0.03em;
-
-          background:
-            linear-gradient(
-              100deg,
-              #fff,
-              #c4b5fd,
-              #d946ef
-            );
-
-          -webkit-background-clip: text;
-          background-clip: text;
-
-          color: transparent;
-        }
-
-        .metric span:not(.metric-divider) {
-          color: #77788c;
-
-          font-size: 0.68rem;
-          font-weight: 600;
-          letter-spacing: 0.15em;
-          text-transform: uppercase;
-        }
-
-        .metric-divider {
-          position: absolute;
-          top: 50%;
-          right: 0;
-
-          width: 1px;
-          height: 1.2rem;
-
-          transform: translateY(-50%);
-
-          background:
-            linear-gradient(
-              transparent,
-              rgba(196, 181, 253, 0.35),
-              transparent
-            );
-        }
-
-        /* ===================================================
-           DIVIDER
-           =================================================== */
-
-        .cinematic-divider {
-          display: flex;
-          align-items: center;
-          gap: 0.7rem;
-
-          margin:
-            clamp(4rem, 8vw, 7rem)
-            0
-            clamp(3rem, 6vw, 5rem);
-        }
-
-        .cinematic-divider span {
-          flex: 1;
-          height: 1px;
-
-          background:
-            linear-gradient(
-              90deg,
-              transparent,
-              rgba(168, 85, 247, 0.4)
-            );
-        }
-
-        .cinematic-divider span:last-of-type {
-          background:
-            linear-gradient(
-              90deg,
-              rgba(168, 85, 247, 0.4),
-              transparent
-            );
-        }
-
-        .cinematic-divider i {
-          width: 5px;
-          height: 5px;
-
-          border-radius: 50%;
-
-          background: #fff;
-
-          box-shadow:
-            0 0 0 4px rgba(168, 85, 247, 0.08),
-            0 0 18px 4px rgba(217, 70, 239, 0.65);
-
-          animation: divider-pulse 3s ease-in-out infinite;
-        }
-
-        /* ===================================================
-           GLASS CARD SYSTEM
-           =================================================== */
-
-        .studio-grid {
-          display: grid;
-
-          grid-template-columns:
-            minmax(0, 1.15fr)
-            minmax(0, 0.9fr)
-            minmax(0, 1fr);
-
-          gap: 1rem;
-        }
-
-        .glass-card {
-          position: relative;
-
-          overflow: hidden;
-
-          min-width: 0;
-
-          padding: clamp(1.25rem, 2.5vw, 1.7rem);
-
-          border:
-            1px solid var(--border);
-
-          border-radius: 1.5rem;
-
-          background:
-            linear-gradient(
-              145deg,
-              rgba(255, 255, 255, 0.065),
-              rgba(255, 255, 255, 0.018)
-            );
-
-          box-shadow:
-            inset 0 1px 0
-              rgba(255, 255, 255, 0.08),
-            inset 0 -1px 0
-              rgba(0, 0, 0, 0.25),
-            0 24px 60px
-              rgba(0, 0, 0, 0.28);
-
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-
-          transition:
-            transform 0.6s var(--ease),
-            border-color 0.5s ease,
-            box-shadow 0.6s var(--ease);
-        }
-
-        .card-glow {
-          position: absolute;
-          top: -6rem;
-          right: -5rem;
-
-          width: 14rem;
-          height: 14rem;
-
-          border-radius: 50%;
-
-          background:
-            radial-gradient(
-              circle,
-              rgba(168, 85, 247, 0.17),
-              transparent 68%
-            );
-
-          filter: blur(10px);
-
-          pointer-events: none;
-        }
-
-        .brand-card {
-          background:
-            radial-gradient(
-              ellipse at 85% 0%,
-              rgba(168, 85, 247, 0.11),
-              transparent 42%
-            ),
-            linear-gradient(
-              145deg,
-              rgba(255, 255, 255, 0.07),
-              rgba(255, 255, 255, 0.018)
-            );
-        }
-
-        /* ===================================================
-           BRAND
-           =================================================== */
-
-        .brand-top {
-          position: relative;
-          z-index: 2;
-
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-        }
-
-        .brand-mark {
-          position: relative;
-
-          flex: none;
-
-          width: 4.3rem;
-          height: 4.3rem;
-
-          perspective: 700px;
-        }
-
-        .brand-mark-back,
-        .brand-mark-front {
-          position: absolute;
-          inset: 0;
-
-          display: grid;
-          place-items: center;
-
-          border-radius: 1.2rem;
-
-          font-size: 2rem;
-          font-weight: 750;
-
-          line-height: 1;
-
-          user-select: none;
-        }
-
-        .brand-mark-back {
-          transform:
-            translate3d(4px, 5px, -10px);
-
-          background:
-            linear-gradient(
-              145deg,
-              #2b0b5e,
-              #0d041e
-            );
-
-          border:
-            1px solid rgba(109, 40, 217, 0.35);
-        }
-
-        .brand-mark-front {
-          z-index: 2;
-
-          color: #fff;
-
-          background:
-            linear-gradient(
-              150deg,
-              rgba(255, 255, 255, 0.2),
-              transparent 40%
-            ),
-            linear-gradient(
-              145deg,
-              rgba(168, 85, 247, 0.5),
-              rgba(14, 4, 34, 0.95)
-            );
-
-          border:
-            1px solid rgba(217, 70, 239, 0.5);
-
-          box-shadow:
-            inset 0 1px 0
-              rgba(255, 255, 255, 0.42),
-            inset 0 -10px 18px
-              rgba(46, 16, 101, 0.58),
-            0 0 35px
-              rgba(124, 58, 237, 0.32);
-
-          transform:
-            rotateX(8deg)
-            rotateY(-10deg);
-
-          text-shadow:
-            0 0 20px
-              rgba(217, 70, 239, 0.8);
-
-          animation:
-            mark-float 10s ease-in-out infinite;
-        }
-
-        .brand-mark-light {
-          position: absolute;
-          top: 0.55rem;
-          left: 0.65rem;
-          z-index: 4;
-
-          width: 1.3rem;
-          height: 0.35rem;
-
-          border-radius: 999px;
-
-          background:
-            linear-gradient(
-              90deg,
-              rgba(255, 255, 255, 0.6),
-              transparent
-            );
-
-          transform: rotate(-35deg);
-          filter: blur(1px);
-        }
-
-        .brand-heading {
-          min-width: 0;
-        }
-
-        .micro-label {
-          display: block;
-
-          color: #8d8ba0;
-
-          font-size: 0.58rem;
-          font-weight: 700;
-          letter-spacing: 0.22em;
-          line-height: 1.4;
-          text-transform: uppercase;
-        }
-
-        .brand-heading h3 {
-          margin: 0.25rem 0 0;
-
-          color: #fff;
-
-          font-size: clamp(
-            1.35rem,
-            2vw,
-            1.65rem
-          );
-
-          font-weight: 700;
-          letter-spacing: -0.045em;
-        }
-
-        .brand-heading h3 span {
-          color: #b88cff;
-        }
-
-        .brand-heading p {
-          margin: 0.32rem 0 0;
-
-          color: #8f8da1;
-
-          font-size: 0.72rem;
-          line-height: 1.45;
-        }
-
-        .brand-heading p span {
-          color: #6f6e80;
-        }
-
-        .brand-description {
-          position: relative;
-          z-index: 2;
-
-          max-width: 32rem;
-
-          margin:
-            1.65rem 0
-            1.4rem;
-
-          color: var(--muted);
-
-          font-size: 0.91rem;
-          line-height: 1.7;
-        }
-
-        .feature-grid {
-          position: relative;
-          z-index: 2;
-
-          display: grid;
-
-          grid-template-columns:
-            repeat(2, minmax(0, 1fr));
-
-          gap: 0.55rem;
-        }
-
-        .feature {
-          display: flex;
-          align-items: center;
-
-          gap: 0.55rem;
-
-          min-height: 2.7rem;
-
-          padding:
-            0.55rem
-            0.65rem;
-
-          border:
-            1px solid
-            rgba(196, 181, 253, 0.1);
-
-          border-radius: 0.85rem;
-
-          background:
-            rgba(255, 255, 255, 0.025);
-
-          color: #c7c5d5;
-
-          font-size: 0.7rem;
-          font-weight: 550;
-          line-height: 1.25;
-        }
-
-        .feature-check {
-          display: grid;
-          place-items: center;
-
-          flex: none;
-
-          width: 1.25rem;
-          height: 1.25rem;
-
-          border-radius: 0.42rem;
-
-          background:
-            linear-gradient(
-              145deg,
-              rgba(168, 85, 247, 0.32),
-              rgba(217, 70, 239, 0.1)
-            );
-
-          border:
-            1px solid
-            rgba(168, 85, 247, 0.28);
-
-          color: #d8b4fe;
-        }
-
-        .feature-check :global(svg) {
-          width: 0.7rem;
-          height: 0.7rem;
-        }
-
-        .brand-footer {
-          display: flex;
-          align-items: center;
-          gap: 0.6rem;
-
-          margin-top: 1.5rem;
-          padding-top: 1rem;
-
-          border-top:
-            1px solid
-            rgba(255, 255, 255, 0.07);
-
-          color: #626174;
-
-          font-size: 0.52rem;
-          font-weight: 700;
-          letter-spacing: 0.18em;
-        }
-
-        .brand-footer-line {
-          width: 2rem;
-          height: 1px;
-
-          background:
-            linear-gradient(
-              90deg,
-              rgba(168, 85, 247, 0.5),
-              rgba(217, 70, 239, 0.1)
-            );
-        }
-
-        /* ===================================================
-           SECTION HEADINGS
-           =================================================== */
-
-        .card-topline {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-
-          margin-bottom: 1.4rem;
-        }
-
-        .section-index {
-          display: grid;
-          place-items: center;
-
-          width: 2rem;
-          height: 2rem;
-
-          border:
-            1px solid
-            rgba(168, 85, 247, 0.18);
-
-          border-radius: 0.7rem;
-
-          color: #9c8ac4;
-
-          background:
-            rgba(168, 85, 247, 0.07);
-
-          font-size: 0.58rem;
-          font-weight: 700;
-        }
-
-        .section-heading {
-          position: relative;
-          z-index: 2;
-        }
-
-        .section-heading h3 {
-          margin: 0;
-
-          color: #fff;
-
-          font-size: 1.35rem;
-          font-weight: 680;
-
-          letter-spacing: -0.045em;
-        }
-
-        .section-heading p {
-          max-width: 17rem;
-
-          margin: 0.4rem 0 1.35rem;
-
-          color: #777689;
-
-          font-size: 0.75rem;
-          line-height: 1.6;
-        }
-
-        /* ===================================================
-           SERVICES
-           =================================================== */
-
-        .service-list {
-          position: relative;
-          z-index: 2;
-
-          margin: 0;
-          padding: 0;
-
-          list-style: none;
-
-          border-top:
-            1px solid
-            rgba(255, 255, 255, 0.07);
-        }
-
-        .service-item {
-          position: relative;
-
-          display: flex;
-          align-items: center;
-
-          gap: 0.75rem;
-
-          min-height: 3.35rem;
-
-          padding: 0.5rem 0.2rem;
-
-          border-bottom:
-            1px solid
-            rgba(255, 255, 255, 0.07);
-
-          color: #c7c5d5;
-
-          transition:
-            padding 0.5s var(--ease),
-            color 0.35s ease;
-        }
-
-        .service-item::before {
-          content: "";
-
-          position: absolute;
-          inset: 0;
-
-          z-index: -1;
-
-          border-radius: 0.7rem;
-
-          background:
-            linear-gradient(
-              90deg,
-              rgba(168, 85, 247, 0.11),
-              transparent
-            );
-
-          opacity: 0;
-
-          transition: opacity 0.4s ease;
-        }
-
-        .service-number {
-          width: 1.65rem;
-
-          color: #555466;
-
-          font-size: 0.58rem;
-          font-weight: 700;
-          letter-spacing: 0.1em;
-
-          transition: color 0.35s ease;
-        }
-
-        .service-name {
-          flex: 1;
-
-          font-size: 0.78rem;
-          font-weight: 570;
-
-          transition:
-            transform 0.5s var(--ease),
-            color 0.35s ease;
-        }
-
-        .service-arrow {
-          width: 0.95rem;
-          height: 0.95rem;
-
-          color: #77708d;
-
-          opacity: 0.55;
-
-          transition:
-            transform 0.5s var(--ease),
-            color 0.35s ease,
-            opacity 0.35s ease;
-        }
-
-        /* ===================================================
-           CONTACT
-           =================================================== */
-
-        .contact-list {
-          position: relative;
-          z-index: 2;
-
-          display: grid;
-          gap: 0.55rem;
-
-          margin: 0;
-          padding: 0;
-
-          list-style: none;
-        }
-
-        .contact-item {
-          display: flex;
-          align-items: center;
-
-          gap: 0.7rem;
-
-          min-height: 3.55rem;
-
-          padding:
-            0.55rem
-            0.65rem;
-
-          border:
-            1px solid
-            rgba(255, 255, 255, 0.07);
-
-          border-radius: 0.95rem;
-
-          color: inherit;
-
-          background:
-            rgba(255, 255, 255, 0.025);
-
-          text-decoration: none;
-
-          transition:
-            transform 0.5s var(--ease),
-            border-color 0.4s ease,
-            background 0.4s ease,
-            box-shadow 0.5s ease;
-        }
-
-        .contact-icon {
-          display: grid;
-          place-items: center;
-
-          flex: none;
-
-          width: 2.35rem;
-          height: 2.35rem;
-
-          border:
-            1px solid
-            rgba(196, 181, 253, 0.18);
-
-          border-radius: 0.75rem;
-
-          color: #c4b5fd;
-
-          background:
-            linear-gradient(
-              145deg,
-              rgba(168, 85, 247, 0.18),
-              rgba(109, 40, 217, 0.04)
-            );
-
-          box-shadow:
-            inset 0 1px 0
-              rgba(255, 255, 255, 0.1);
-        }
-
-        .contact-icon :global(svg) {
-          width: 0.98rem;
-          height: 0.98rem;
-        }
-
-        .contact-copy {
-          display: flex;
-          flex-direction: column;
-
-          min-width: 0;
-          flex: 1;
-        }
-
-        .contact-label {
-          color: #777587;
-
-          font-size: 0.54rem;
-          font-weight: 700;
-          letter-spacing: 0.17em;
-          text-transform: uppercase;
-        }
-
-        .contact-value {
-          margin-top: 0.17rem;
-
-          overflow-wrap: anywhere;
-
-          color: #dddbe8;
-
-          font-size: 0.7rem;
-          font-weight: 520;
-          line-height: 1.35;
-        }
-
-        .contact-arrow {
-          width: 0.85rem;
-          height: 0.85rem;
-
-          flex: none;
-
-          color: #6f6c7f;
-
-          transition:
-            transform 0.45s var(--ease),
-            color 0.3s ease;
-        }
-
-        /* ===================================================
-           UTILITY / SOCIAL
-           =================================================== */
-
-        .utility {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-
-          gap: 1.5rem;
-
-          margin-top: 1rem;
-          padding-top: 2rem;
-
-          border-top:
-            1px solid
-            rgba(255, 255, 255, 0.07);
-        }
-
-        .social-intro {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-        }
-
-        .social-intro p {
-          margin: 0.15rem 0 0;
-
-          color: #d0cedb;
-
-          font-size: 0.8rem;
-          font-weight: 600;
-        }
-
-        .social-orbit {
-          position: relative;
-
-          display: grid;
-          place-items: center;
-
-          width: 2.55rem;
-          height: 2.55rem;
-
-          border:
-            1px solid
-            rgba(168, 85, 247, 0.22);
-
-          border-radius: 50%;
-
-          transform: rotateX(65deg);
-        }
-
-        .social-orbit::before,
-        .social-orbit::after {
-          content: "";
-
-          position: absolute;
-
-          border:
-            1px solid
-            rgba(217, 70, 239, 0.2);
-
-          border-radius: 50%;
-        }
-
-        .social-orbit::before {
-          inset: 0.3rem;
-        }
-
-        .social-orbit::after {
-          inset: -0.3rem;
-        }
-
-        .social-orbit span {
-          width: 0.35rem;
-          height: 0.35rem;
-
-          border-radius: 50%;
-
-          background: #d946ef;
-
-          box-shadow:
-            0 0 12px
-              rgba(217, 70, 239, 0.85);
-        }
-
-        .social-navigation {
-          min-width: 0;
-        }
-
-        .social-list {
-          display: flex;
-          flex-wrap: wrap;
-          justify-content: flex-end;
-
-          gap: 0.65rem;
-
-          margin: 0;
-          padding: 0;
-
-          list-style: none;
-        }
-
-        .social-card {
-          display: flex;
-          align-items: center;
-
-          gap: 0.6rem;
-
-          min-height: 3.25rem;
-
-          padding:
-            0.45rem
-            0.7rem;
-
-          border:
-            1px solid
-            rgba(255, 255, 255, 0.08);
-
-          border-radius: 1rem;
-
-          color: inherit;
-
-          background:
-            linear-gradient(
-              145deg,
-              rgba(255, 255, 255, 0.05),
-              rgba(255, 255, 255, 0.015)
-            );
-
-          text-decoration: none;
-
-          box-shadow:
-            inset 0 1px 0
-              rgba(255, 255, 255, 0.06);
-
-          transition:
-            transform 0.45s var(--ease),
-            border-color 0.4s ease,
-            background 0.4s ease,
-            box-shadow 0.45s var(--ease);
-        }
-
-        .social-icon {
-          display: grid;
-          place-items: center;
-
-          width: 2.2rem;
-          height: 2.2rem;
-
-          border:
-            1px solid
-            rgba(168, 85, 247, 0.22);
-
-          border-radius: 0.72rem;
-
-          color: #c4b5fd;
-
-          background:
-            rgba(109, 40, 217, 0.08);
-        }
-
-        .social-icon :global(svg) {
-          width: 0.95rem;
-          height: 0.95rem;
-        }
-
-        .social-copy {
-          display: flex;
-          flex-direction: column;
-
-          min-width: 0;
-        }
-
-        .social-label {
-          color: #777587;
-
-          font-size: 0.5rem;
-          font-weight: 700;
-          letter-spacing: 0.16em;
-          text-transform: uppercase;
-        }
-
-        .social-handle {
-          margin-top: 0.14rem;
-
-          color: #d7d5e2;
-
-          font-size: 0.66rem;
-          font-weight: 550;
-          white-space: nowrap;
-        }
-
-        .social-external {
-          width: 0.72rem;
-          height: 0.72rem;
-
-          color: #666476;
-
-          transition:
-            transform 0.4s var(--ease),
-            color 0.3s ease;
-        }
-
-        /* ===================================================
-           BOTTOM NAVIGATION
-           =================================================== */
-
-        .bottom-navigation {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-
-          gap: 1.5rem;
-
-          margin-top: 1rem;
-          padding-top: 1rem;
-        }
-
-        .bottom-note {
-          color: #565466;
-
-          font-size: 0.58rem;
-          font-weight: 600;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-        }
-
-        .footer-nav ul {
-          display: flex;
-          flex-wrap: wrap;
-
-          gap: 0.35rem;
-
-          margin: 0;
-          padding: 0;
-
-          list-style: none;
-        }
-
-        .footer-nav a {
-          display: inline-flex;
-          align-items: center;
-
-          min-height: 2.6rem;
-
-          padding: 0 0.75rem;
-
-          border-radius: 0.7rem;
-
-          color: #898798;
-
-          font-size: 0.7rem;
-          text-decoration: none;
-
-          transition:
-            color 0.3s ease,
-            background 0.3s ease;
-        }
-
-        .to-top {
-          display: inline-flex;
-          align-items: center;
-
-          gap: 0.5rem;
-
-          min-height: 2.6rem;
-
-          padding:
-            0 0.85rem;
-
-          border:
-            1px solid
-            rgba(255, 255, 255, 0.09);
-
-          border-radius: 0.8rem;
-
-          color: #a6a4b4;
-
-          background:
-            rgba(255, 255, 255, 0.025);
-
-          font: inherit;
-          font-size: 0.65rem;
-          font-weight: 600;
-
-          cursor: pointer;
-
-          transition:
-            transform 0.45s var(--ease),
-            border-color 0.35s ease,
-            color 0.3s ease,
-            background 0.35s ease;
-        }
-
-        .to-top :global(svg) {
-          width: 0.85rem;
-          height: 0.85rem;
-        }
-
-        /* ===================================================
-           CLOSING
-           =================================================== */
-
-        .closing {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-
-          gap: 0.9rem;
-
-          margin-top:
-            clamp(2.5rem, 5vw, 4rem);
-
-          text-align: center;
-        }
-
-        .closing-line {
-          display: flex;
-          align-items: center;
-          gap: 0.6rem;
-
-          width: min(100%, 24rem);
-        }
-
-        .closing-line span {
-          flex: 1;
-          height: 1px;
-
-          background:
-            linear-gradient(
-              90deg,
-              transparent,
-              rgba(168, 85, 247, 0.22)
-            );
-        }
-
-        .closing-line span:last-of-type {
-          background:
-            linear-gradient(
-              90deg,
-              rgba(168, 85, 247, 0.22),
-              transparent
-            );
-        }
-
-        .closing-line i {
-          width: 3px;
-          height: 3px;
-
-          border-radius: 50%;
-
-          background: #a855f7;
-
-          box-shadow:
-            0 0 10px
-              rgba(168, 85, 247, 0.7);
-        }
-
-        .signature {
-          margin: 0;
-
-          color: #777487;
-
-          font-size: 0.58rem;
-          font-weight: 700;
-          letter-spacing: 0.3em;
-          text-transform: uppercase;
-        }
-
-        .copyright {
-          margin: 0;
-
-          color: #4f4d5d;
-
-          font-size: 0.68rem;
-        }
-
-        /* ===================================================
-           FOCUS
-           =================================================== */
-
-        .primary-cta:focus-visible,
-        .secondary-cta:focus-visible,
-        .contact-item:focus-visible,
-        .social-card:focus-visible,
-        .to-top:focus-visible,
-        .footer-nav a:focus-visible {
-          outline:
-            2px solid
-            var(--lavender);
-
-          outline-offset: 3px;
-        }
-
-        /* ===================================================
-           HOVER
-           =================================================== */
-
-        @media (hover: hover) and (pointer: fine) {
-          .glass-card:hover {
-            border-color:
-              rgba(168, 85, 247, 0.18);
-
-            box-shadow:
-              inset 0 1px 0
-                rgba(255, 255, 255, 0.1),
-              0 30px 70px
-                rgba(0, 0, 0, 0.34),
-              0 0 35px
-                rgba(109, 40, 217, 0.07);
-          }
-
-          .primary-cta:hover {
-            transform:
-              perspective(900px)
-              translate3d(0, -5px, 0)
-              rotateX(var(--rx))
-              rotateY(var(--ry));
-
-            filter: brightness(1.1);
-
-            box-shadow:
-              inset 0 1px 0
-                rgba(255, 255, 255, 0.55),
-              inset 0 -3px 0
-                rgba(46, 16, 101, 0.55),
-              0 28px 55px
-                rgba(76, 29, 149, 0.52),
-              0 0 75px
-                rgba(168, 85, 247, 0.4);
-          }
-
-          .primary-cta:hover .cta-light {
-            opacity: 1;
-          }
-
-          .primary-cta:hover .cta-arrow {
-            transform:
-              translate3d(4px, 0, 0);
-          }
-
-          .secondary-cta:hover {
-            transform:
-              translate3d(0, -3px, 0);
-
-            border-color:
-              rgba(168, 85, 247, 0.35);
-
-            color: #fff;
-
-            background:
-              rgba(168, 85, 247, 0.08);
-          }
-
-          .secondary-cta:hover
-            .secondary-external {
-            color: #c4b5fd;
-          }
-
-          .service-item:hover {
-            padding-left: 0.5rem;
-            color: #fff;
-          }
-
-          .service-item:hover::before {
-            opacity: 1;
-          }
-
-          .service-item:hover
-            .service-number {
-            color: #a855f7;
-          }
-
-          .service-item:hover
-            .service-name {
-            transform:
-              translate3d(5px, 0, 0);
-          }
-
-          .service-item:hover
-            .service-arrow {
-            opacity: 1;
-
-            color: #d946ef;
-
-            transform:
-              translate3d(4px, 0, 0);
-          }
-
-          .contact-item:hover {
-            transform:
-              translate3d(0, -2px, 0);
-
-            border-color:
-              rgba(196, 181, 253, 0.25);
-
-            background:
-              rgba(168, 85, 247, 0.055);
-
-            box-shadow:
-              inset 0 1px 0
-                rgba(255, 255, 255, 0.1),
-              0 12px 28px
-                rgba(0, 0, 0, 0.24);
-          }
-
-          .contact-item:hover
-            .contact-arrow {
-            color: #d946ef;
-
-            transform:
-              translate3d(3px, 0, 0);
-          }
-
-          .social-card:hover {
-            transform:
-              translate3d(0, -3px, 0);
-
-            border-color:
-              rgba(217, 70, 239, 0.38);
-
-            background:
-              rgba(168, 85, 247, 0.065);
-
-            box-shadow:
-              inset 0 1px 0
-                rgba(255, 255, 255, 0.1),
-              0 12px 28px
-                rgba(0, 0, 0, 0.25),
-              0 0 24px
-                rgba(168, 85, 247, 0.12);
-          }
-
-          .social-card:hover
-            .social-icon {
-            color: #fff;
-
-            border-color:
-              rgba(217, 70, 239, 0.45);
-          }
-
-          .social-card:hover
-            .social-external {
-            color: #c4b5fd;
-
-            transform:
-              translate3d(2px, -2px, 0);
-          }
-
-          .to-top:hover {
-            transform:
-              translate3d(0, -3px, 0);
-
-            border-color:
-              rgba(168, 85, 247, 0.38);
-
-            color: #fff;
-
-            background:
-              rgba(168, 85, 247, 0.07);
-          }
-
-          .footer-nav a:hover {
-            color: #fff;
-            background:
-              rgba(168, 85, 247, 0.08);
-          }
-        }
-
-        /* ===================================================
-           ACTIVE
-           =================================================== */
-
-        .primary-cta:active {
-          transform:
-            translate3d(0, -1px, 0);
-        }
-
-        .social-card:active,
-        .contact-item:active {
-          transform:
-            translate3d(0, 1px, 0);
-        }
-
-        /* ===================================================
-           ANIMATIONS
-           =================================================== */
-
-        @keyframes sheen {
-          0%,
-          70% {
-            transform:
-              translate3d(-180%, 0, 0)
-              skewX(-18deg);
-          }
-
-          100% {
-            transform:
-              translate3d(430%, 0, 0)
-              skewX(-18deg);
-          }
-        }
-
-        @keyframes float {
-          50% {
-            transform:
-              translate3d(0, -18px, 0);
-          }
-        }
-
-        @keyframes mark-float {
-          50% {
-            transform:
-              rotateX(8deg)
-              rotateY(-10deg)
-              translate3d(0, -4px, 0);
-          }
-        }
-
-        @keyframes ring-drift {
-          to {
-            transform:
-              rotateX(68deg)
-              rotate(360deg);
-          }
-        }
-
-        @keyframes pulse-dot {
-          50% {
-            box-shadow:
-              0 0 0 6px
-                rgba(217, 70, 239, 0.06),
-              0 0 18px
-                rgba(217, 70, 239, 1);
-          }
-        }
-
-        @keyframes divider-pulse {
-          50% {
-            box-shadow:
-              0 0 0 6px
-                rgba(168, 85, 247, 0.05),
-              0 0 20px 5px
-                rgba(217, 70, 239, 0.8);
-          }
-        }
-
-        /* ===================================================
-           TABLET
-           =================================================== */
-
-        @media (max-width: 70rem) {
-          .studio-grid {
-            grid-template-columns:
-              repeat(2, minmax(0, 1fr));
-          }
-
-          .brand-card {
-            grid-column: 1 / -1;
-          }
-        }
-
-        /* ===================================================
-           MOBILE
-           =================================================== */
-
-        @media (max-width: 52rem) {
-          .footer {
-            padding-top: 5rem;
-          }
-
-          .headline {
-            letter-spacing: -0.055em;
-          }
-
-          .studio-grid {
-            grid-template-columns:
-              minmax(0, 1fr);
-          }
-
-          .brand-card {
-            grid-column: auto;
-          }
-
-          .utility {
-            flex-direction: column;
-            align-items: flex-start;
-          }
-
-          .social-navigation {
-            width: 100%;
-          }
-
-          .social-list {
-            justify-content: flex-start;
-            width: 100%;
-          }
-
-          .social-card {
-            flex: 1;
-          }
-
-          .bottom-navigation {
-            align-items: flex-start;
-            flex-direction: column;
-          }
-
-          .to-top {
-            width: 100%;
-            justify-content: center;
-          }
-
-          .orbit,
-          .floating-chip {
-            display: none;
-          }
-        }
-
-        @media (max-width: 38rem) {
-          .hero-actions {
-            flex-direction: column;
-            align-items: stretch;
-          }
-
-          .cta-wrap {
-            width: 100%;
-          }
-
-          .primary-cta {
-            width: 100%;
-          }
-
-          .secondary-cta {
-            width: 100%;
-          }
-
-          .metrics {
-            margin-top: 2.3rem;
-          }
-
-          .metric {
-            padding: 0 1rem;
-          }
-
-          .metric strong {
-            font-size: 0.95rem;
-          }
-
-          .metric span:not(.metric-divider) {
-            font-size: 0.56rem;
-          }
-
-          .social-list {
-            flex-direction: column;
-          }
-
-          .social-card {
-            width: 100%;
-          }
-
-          .feature-grid {
-            grid-template-columns:
-              minmax(0, 1fr);
-          }
-        }
-
-        @media (max-width: 27rem) {
-          .footer {
-            padding-inline: 0.85rem;
-          }
-
-          .brand-top {
-            align-items: flex-start;
-          }
-
-          .brand-mark {
-            width: 3.7rem;
-            height: 3.7rem;
-          }
-
-          .brand-heading h3 {
-            font-size: 1.2rem;
-          }
-
-          .brand-heading p {
-            font-size: 0.64rem;
-          }
-
-          .headline-main,
-          .headline-gradient {
-            font-size: 2.35rem;
-          }
-
-          .metric {
-            padding: 0 0.7rem;
-          }
-        }
-
-        /* ===================================================
-           REDUCED MOTION
-           =================================================== */
-
-        @media (prefers-reduced-motion: reduce) {
-          .reveal {
-            opacity: 1 !important;
-            transform: none !important;
-            transition: none !important;
-          }
-
-          .ambient-one,
-          .ambient-two,
-          .ambient-three,
-          .brand-mark-front,
-          .status-dot,
-          .cinematic-divider i,
-          .cta-sheen {
-            animation: none !important;
-          }
-
-          .primary-cta,
-          .secondary-cta,
-          .glass-card,
-          .service-item,
-          .contact-item,
-          .social-card,
-          .to-top,
-          .footer-nav a,
-          .cta-arrow,
-          .contact-arrow,
-          .social-external {
-            transition: none !important;
-          }
-
-          .primary-cta:hover,
-          .secondary-cta:hover,
-          .glass-card:hover,
-          .contact-item:hover,
-          .social-card:hover,
-          .to-top:hover {
-            transform: none !important;
-          }
-
-          .cta-light {
-            display: none;
-          }
-        }
-      `}</style>
-    </footer>
+      </footer>
+    </MotionConfig>
   );
 }
