@@ -52,7 +52,7 @@ const mainPlans: Plan[] = [
     name: "Starter",
     description:
       "For brands looking for a focused, high-quality creative batch.",
-    price: "$600",
+    price: "$800",
     creativeCount: "10",
     supportLine: "Ad Creatives",
     features: [
@@ -61,7 +61,7 @@ const mainPlans: Plan[] = [
       "2 Pixar-Style Ads",
       "2 Claymation-Style Ads",
       "2 revisions per creative",
-      "Average 3–4 days turnaround",
+      "Average 6–8 days turnaround",
       "Direct communication",
       "Easy payment (PayPal / Bank Transfer)",
       "Pause or cancel anytime",
@@ -72,7 +72,7 @@ const mainPlans: Plan[] = [
     name: "Growth",
     description:
       "For brands that need greater creative variety and strategic support.",
-    price: "$1,200",
+    price: "$1,600",
     creativeCount: "18",
     supportLine: "Ad Creatives",
     featured: true,
@@ -82,7 +82,7 @@ const mainPlans: Plan[] = [
       "4 Pixar-Style Ads",
       "3 Claymation-Style Ads",
       "3 revisions per creative",
-      "Average 2–3 days turnaround",
+      "Average 12–14 days turnaround",
       "Dedicated Creative Strategist",
       "Monthly Creative Performance Debrief Call",
       "Pause or cancel anytime",

@@ -419,49 +419,72 @@ export default function AboutUs() {
             </motion.div>
 
             {/* Bio */}
-            <motion.div
-              {...reveal(0.1)}
-              className="lg:col-span-7 lg:col-start-1 lg:row-start-2"
-            >
-              <div
-                aria-hidden="true"
-                className="mb-8 h-px w-full bg-[rgba(145,100,245,0.18)]"
-              />
+         {/* Bio: replace the whole existing motion.div with this */}
+<motion.div
+  {...reveal(0.1)}
+  className="lg:col-span-7 lg:col-start-1 lg:row-start-2"
+>
+  <div
+    aria-hidden="true"
+    className="mb-8 h-px w-full bg-[rgba(145,100,245,0.18)]"
+  />
 
-              <div className="max-w-2xl space-y-5 text-[16px] font-medium leading-[1.8] text-[#AAA5B5] sm:text-[17px]">
-                <p>
-                  <strong className="font-bold text-[#F7F5FA]">
-                    I&apos;m Aakash Hanif, a performance-focused video editor
-                    and creative strategist.
-                  </strong>{" "}
-                  Over the past 2+ years and 1000+ projects, I&apos;ve worked
-                  with DTC ecommerce brands across a wide range of consumer
-                  categories, creating work designed to capture attention,
-                  communicate value quickly, and move viewers toward action.
-                </p>
+  <div className="max-w-2xl space-y-5 text-[16px] font-medium leading-[1.8] text-[#AAA5B5] sm:text-[17px]">
+    <p
+      className={`${display.className} text-[1.35rem] font-bold leading-[1.3] tracking-[-0.03em] text-[#F7F5FA] sm:text-[1.6rem]`}
+    >
+      Most ads don&rsquo;t fail because they look bad. They fail because{" "}
+      <span className="text-[#B9A0FF]">nobody stopped scrolling.</span>
+    </p>
 
-                <p>
-                  My craft spans performance ads, Direct Response VSLs, UGC and
-                  AI UGC, Meta ads, AI-generated creative, Pixar-style and
-                  claymation concepts, and social content, with static creative
-                  where it fits.
-                </p>
-              </div>
+    <p>
+      That&rsquo;s the part I work on. I&rsquo;m{" "}
+      <strong className="font-bold text-[#F7F5FA]">Aakash Hanif</strong>, a video
+      editor and creative strategist. Over{" "}
+      <span className="font-bold text-[#F7F5FA]">2+ years and 1000+ projects</span>
+      , I&rsquo;ve worked with different DTC ecommerce brands, from skincare and
+      supplements to pet food and furniture.
+    </p>
 
-              <ul
-                aria-label="Creative formats"
-                className="m-0 mt-7 flex list-none flex-wrap gap-2 p-0"
-              >
-                {formats.map((format) => (
-                  <li
-                    key={format}
-                    className={`rounded-full border ${BORDER} bg-[#15121B] px-3.5 py-1.5 text-[12.5px] font-bold leading-none text-[#F7F5FA]`}
-                  >
-                    {format}
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
+    <p>
+      Every brand is different. My process isn&rsquo;t. I start with what the
+      viewer should feel in the first seconds, explain the product in plain
+      words, then give them{" "}
+      <mark className="rounded bg-[rgba(145,100,245,0.2)] px-1.5 py-0.5 font-bold text-[#F7F5FA] [box-decoration-break:clone] [-webkit-box-decoration-break:clone]">
+        one clear reason to click.
+      </mark>{" "}
+      That rule runs through everything I make: Meta ads, Direct Response VSLs,
+      UGC and AI UGC, and Pixar-style or claymation concepts when a brand wants
+      to be remembered.
+    </p>
+
+    <p>
+      I use AI where it helps me move faster. But{" "}
+      <span className="font-bold text-[#F7F5FA]">
+        the taste, the pacing and the final call still come from an editor.
+      </span>{" "}
+      That&rsquo;s the gap between a video that looks good and one that sells.
+    </p>
+
+    <p className="font-bold text-[#F7F5FA]">
+      If your ads look fine but do nothing, let&rsquo;s fix that.
+    </p>
+  </div>
+
+  <ul
+    aria-label="Creative formats"
+    className="m-0 mt-7 flex list-none flex-wrap gap-2 p-0"
+  >
+    {formats.map((format) => (
+      <li
+        key={format}
+        className={`rounded-full border ${BORDER} bg-[#15121B] px-3.5 py-1.5 text-[12.5px] font-bold leading-none text-[#F7F5FA]`}
+      >
+        {format}
+      </li>
+    ))}
+  </ul>
+</motion.div>
 
             {/* Stats */}
             <dl className="m-0 grid grid-cols-3 gap-2.5 sm:gap-4 lg:col-span-7 lg:col-start-1 lg:row-start-3">
