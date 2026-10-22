@@ -69,11 +69,11 @@ type CalendarStatus = "idle" | "loading" | "ready" | "error";
 /* Contact details                                                     */
 /* ------------------------------------------------------------------ */
 
-const PHONE_DISPLAY = "+92 312 5993603";
-const PHONE_HREF = "tel:+923125993603";
+const PHONE_DISPLAY = "+92 333 56736933";
+const PHONE_HREF = "tel:+9233356736933";
 // wa.me needs digits only: country code + number, no "+" and no leading 0.
 const WHATSAPP_URL =
-  "https://wa.me/923125993603?text=Hi%2C%20I%E2%80%99d%20like%20to%20book%20a%20free%20consultation!";
+  "https://wa.me/9233356736933?text=Hi%2C%20I%E2%80%99d%20like%20to%20book%20a%20free%20consultation!";
 
 /* ------------------------------------------------------------------ */
 /* Content                                                             */
