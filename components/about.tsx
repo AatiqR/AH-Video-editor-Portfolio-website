@@ -28,7 +28,7 @@ const body = Manrope({
 /* Assets                                                              */
 /* ------------------------------------------------------------------ */
 
-const PROFILE_IMAGE = "/Assets/Aakash.png";
+const PROFILE_IMAGE = "/aakash.png";
 
 /*
  * TOOL LOGOS
