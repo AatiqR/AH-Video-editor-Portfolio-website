@@ -2,7 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
-
+import CustomCursor from "@/components/cursor";
+import FloatingWhatsApp from "@/components/whatsapp";
 /* =========================================================
    FONTS
 ========================================================= */
@@ -446,6 +447,8 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+
+
       <body
         className="
           min-h-screen
@@ -465,7 +468,11 @@ export default function RootLayout({
             __html: safeJsonLd,
           }}
         />
+  {/* Floating WhatsApp Button */}
+        <FloatingWhatsApp />
 
+        {/* Custom Cursor */}
+        <CustomCursor />
         {children}
       </body>
     </html>
