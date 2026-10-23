@@ -156,7 +156,7 @@ const socials: ReadonlyArray<{
   {
     label: "Instagram",
     handle: "@Aakasheditslab",
-    href: "https://instagram.com/Aakasheditslab",
+    href: "https://www.instagram.com/aakashcreativestudio/",
     icon: InstagramIcon,
   },
   {

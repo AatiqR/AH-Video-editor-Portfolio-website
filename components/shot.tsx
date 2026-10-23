@@ -81,6 +81,8 @@ const CATEGORIES: Category[] = [
       { id: "ejcv1876aNg", title: "UGC" },
       { id: "7vVqH4nsDoM", title: "AI UGC" },
       { id: "s6SoieRCmEs", title: "UGC" },
+      { id: "jTXXYwt4mTY", title: "AI UGC" },
+
     ],
   },
   {
@@ -108,6 +110,7 @@ const CATEGORIES: Category[] = [
       { id: "KhbNNGZCdS0", title: "AI Claymation" },
       { id: "siLYCr9e5bo", title: "AI Claymation" },
       { id: "iqsAP32Kk1o", title: "AI Claymation" },
+      { id: "aeUUAMzqwG0", title: "AI Claymation" },
     ],
   },
 ];

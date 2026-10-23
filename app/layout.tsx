@@ -246,7 +246,7 @@ const organizationSchema = {
   telephone: "+923335673693",
 
   sameAs: [
-    "https://www.instagram.com/aakasheditslab/",
+    "https://www.instagram.com/aakashcreativestudio",
     "https://www.linkedin.com/in/aakash-hanif-7a7a53289",
     "https://x.com/aakashhanif_",
   ],
@@ -397,7 +397,7 @@ const personSchema = {
   url: SITE_URL,
 
   sameAs: [
-    "https://www.instagram.com/aakasheditslab/",
+    "https://www.instagram.com/aakashcreativestudio",
     "https://www.linkedin.com/in/aakash-hanif-7a7a53289",
     "https://x.com/aakashhanif_",
   ],
